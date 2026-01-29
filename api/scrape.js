@@ -1,58 +1,60 @@
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
-  let browser = null;
-  try {
-    // 1. Lanzar el navegador con configuraciones de bajo consumo
-    browser = await puppeteer.launch({
-      args: [...chromium.args, "--disable-gpu", "--disable-dev-shm-usage"],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    });
-
-    const page = await browser.newPage();
+    const url = 'https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm';
     
-    // Evitamos cargar imágenes y CSS para ahorrar memoria y tiempo
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      if (['image', 'stylesheet', 'font'].includes(req.resourceType())) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
+    try {
+        const { data } = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        });
 
-    // 2. Navegar a la web
-    await page.goto('https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm', {
-      waitUntil: 'networkidle2',
-      timeout: 25000
-    });
+        const $ = cheerio.load(data);
+        const products = [];
 
-    // 3. Extraer datos con un selector más simple
-    const products = await page.evaluate(() => {
-      const results = [];
-      const items = document.querySelectorAll('.product-miniature');
-      items.forEach(el => {
-        const nombre = el.querySelector('.product-title')?.innerText.trim();
-        const precio = el.querySelector('.price')?.innerText.trim();
-        const ref = el.getAttribute('data-id-product');
-        const enlace = el.querySelector('a')?.href;
-        
-        if (nombre && precio) {
-          results.push({ ref: ref || 'N/A', nombre, precio, enlace });
+        // BUSQUEDA TÉCNICA 1: Buscamos en los scripts de datos estructurados (JSON-LD)
+        $('script[type="application/ld+json"]').each((i, el) => {
+            try {
+                const json = JSON.parse($(el).html());
+                // Si el JSON tiene una lista de items (itemListElement)
+                if (json.itemListElement) {
+                    json.itemListElement.forEach(item => {
+                        const p = item.item || item;
+                        if (p.name) {
+                            products.push({
+                                ref: p.sku || p.mpn || "N/A",
+                                nombre: p.name,
+                                precio: p.offers ? `${p.offers.price} ${p.offers.priceCurrency}` : "Ver web",
+                                enlace: p.url || url
+                            });
+                        }
+                    });
+                }
+            } catch (e) { /* Ignorar scripts mal formados */ }
+        });
+
+        // BUSQUEDA TÉCNICA 2: Si el JSON-LD falla, usamos selectores clásicos mejorados
+        if (products.length === 0) {
+            $('.product-miniature').each((i, el) => {
+                const $el = $(el);
+                products.push({
+                    ref: $el.attr('data-id-product') || "N/A",
+                    nombre: $el.find('.product-title').text().trim(),
+                    precio: $el.find('.price').text().trim(),
+                    enlace: $el.find('a').attr('href')
+                });
+            });
         }
-      });
-      return results;
-    });
 
-    await browser.close();
-    res.status(200).json({ success: true, total: products.length, data: products });
+        res.status(200).json({
+            success: true,
+            total: products.length,
+            data: products
+        });
 
-  } catch (error) {
-    if (browser) await browser.close();
-    console.error("LOG_ERROR:", error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 }

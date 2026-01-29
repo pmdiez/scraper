@@ -1,8 +1,8 @@
 {
-  "name": "efectoled-scraper-pro",
+  "name": "efectoled-scraper-smart",
   "version": "1.0.0",
   "dependencies": {
-    "@sparticuz/chromium": "119.0.2",
-    "puppeteer-core": "21.5.0"
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12"
   }
 }
