@@ -2,38 +2,51 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
-    // Usamos la URL de búsqueda, suele saltar mejor los bloqueos de categoría
-    const targetUrl = 'https://www.efectoled.com/es/buscar?s=60x60';
-    // Usamos el proxy de Codetabs (más rápido y estable para Vercel)
-    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
-
+    const url = 'https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm';
+    
     try {
-        const { data } = await axios.get(proxyUrl, { timeout: 20000 });
-        
-        // Codetabs devuelve el HTML directamente (no en una propiedad .contents)
+        const { data } = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        });
+
         const $ = cheerio.load(data);
         const products = [];
 
-        $('.product-miniature').each((i, el) => {
-            const $el = $(el);
-            
-            const nombre = $el.find('.product-title').text().trim();
-            const precio = $el.find('.price').last().text().trim() || $el.find('.current-price').text().trim();
-            const enlace = $el.find('.product-title a').attr('href');
-            
-            // IMAGEN: Buscamos el src o data-src
-            let imagen = $el.find('img').attr('data-src') || $el.find('img').attr('src');
-
-            // --- EXTRACCIÓN DE REF (El número de 6 dígitos) ---
-            // Buscamos cualquier número de entre 5 y 7 dígitos en el texto de la ficha
-            const textoCompleto = $el.text();
-            const match = textoCompleto.match(/Ref\s*(\d{5,7})/i) || textoCompleto.match(/(\d{5,7})/);
-            const ref = match ? match[1] : ($el.attr('data-id-product') || "N/A");
-
-            if (nombre && precio) {
-                products.push({ ref, nombre, precio, imagen, enlace });
-            }
+        // BUSQUEDA TÉCNICA 1: Buscamos en los scripts de datos estructurados (JSON-LD)
+        $('script[type="application/ld+json"]').each((i, el) => {
+            try {
+                const json = JSON.parse($(el).html());
+                // Si el JSON tiene una lista de items (itemListElement)
+                if (json.itemListElement) {
+                    json.itemListElement.forEach(item => {
+                        const p = item.item || item;
+                        if (p.name) {
+                            products.push({
+                                ref: p.sku || p.mpn || "N/A",
+                                nombre: p.name,
+                                precio: p.offers ? `${p.offers.price} ${p.offers.priceCurrency}` : "Ver web",
+                                enlace: p.url || url
+                            });
+                        }
+                    });
+                }
+            } catch (e) { /* Ignorar scripts mal formados */ }
         });
+
+        // BUSQUEDA TÉCNICA 2: Si el JSON-LD falla, usamos selectores clásicos mejorados
+        if (products.length === 0) {
+            $('.product-miniature').each((i, el) => {
+                const $el = $(el);
+                products.push({
+                    ref: $el.attr('data-id-product') || "N/A",
+                    nombre: $el.find('.product-title').text().trim(),
+                    precio: $el.find('.price').text().trim(),
+                    enlace: $el.find('a').attr('href')
+                });
+            });
+        }
 
         res.status(200).json({
             success: true,
@@ -42,10 +55,6 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: "El proxy no respondió a tiempo",
-            error: error.message 
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 }
