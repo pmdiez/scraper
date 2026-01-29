@@ -7,8 +7,8 @@ export default async function handler(req, res) {
     try {
         const { data } = await axios.get(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept-Language': 'es-ES,es;q=0.9'
+                // Solo lo mínimo para parecer un navegador normal
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             },
             timeout: 10000
         });
@@ -16,36 +16,32 @@ export default async function handler(req, res) {
         const $ = cheerio.load(data);
         const products = [];
 
+        // Usamos el selector más básico posible
         $('.product-miniature').each((i, el) => {
             const $el = $(el);
             
-            // 1. Extraer Nombre
             const nombre = $el.find('.product-title').text().trim();
+            const precio = $el.find('.price').last().text().trim() || $el.find('.current-price').text().trim();
             
-            // 2. Extraer Precio (El más actual)
-            let precio = $el.find('.price').last().text().trim() || $el.find('.current-price').text().trim();
-            
-            // 3. EXTRAER REFERENCIA (Búsqueda por texto "Ref")
-            // Buscamos cualquier elemento que contenga la palabra 'Ref' dentro de la tarjeta
-            let refText = $el.find('div, span, p').filter(function() {
-                return $(this).text().includes('Ref');
-            }).first().text();
+            // BUSCAR LA REF: Buscamos el texto que contenga "Ref" dentro de la tarjeta
+            let ref = "N/A";
+            $el.find('*').each((_, subEl) => {
+                const text = $(subEl).text();
+                if (text.includes('Ref')) {
+                    // Extraemos solo los números que siguen a "Ref"
+                    const match = text.match(/\d+/);
+                    if (match) ref = match[0];
+                }
+            });
 
-            // Limpiamos el texto para quedarnos solo con el número (ej: "Ref 106784" -> "106784")
-            let ref = refText ? refText.replace(/[^\d]/g, '') : $el.attr('data-id-product');
+            // Si no encontró "Ref", usamos el ID de producto como plan B
+            if (ref === "N/A") ref = $el.attr('data-id-product') || "N/A";
 
-            // 4. Extraer Imagen y Enlace
             const imagen = $el.find('img').attr('data-src') || $el.find('img').attr('src');
             const enlace = $el.find('.product-title a').attr('href');
 
             if (nombre && precio) {
-                products.push({
-                    ref: ref || "S/R",
-                    nombre: nombre,
-                    precio: precio,
-                    imagen: imagen,
-                    enlace: enlace
-                });
+                products.push({ ref, nombre, precio, imagen, enlace });
             }
         });
 
