@@ -14,46 +14,33 @@ export default async function handler(req, res) {
         const $ = cheerio.load(data);
         const products = [];
 
-        // BUSQUEDA TÉCNICA 1: Buscamos en los scripts de datos estructurados (JSON-LD)
-        $('script[type="application/ld+json"]').each((i, el) => {
-            try {
-                const json = JSON.parse($(el).html());
-                // Si el JSON tiene una lista de items (itemListElement)
-                if (json.itemListElement) {
-                    json.itemListElement.forEach(item => {
-                        const p = item.item || item;
-                        if (p.name) {
-                            products.push({
-                                ref: p.sku || p.mpn || "N/A",
-                                nombre: p.name,
-                                precio: p.offers ? `${p.offers.price} ${p.offers.priceCurrency}` : "Ver web",
-                                enlace: p.url || url
-                            });
-                        }
-                    });
-                }
-            } catch (e) { /* Ignorar scripts mal formados */ }
-        });
+        $('.product-miniature').each((i, el) => {
+            const $el = $(el);
+            
+            const nombre = $el.find('.product-title').text().trim();
+            const precio = $el.find('.price').last().text().trim() || $el.find('.current-price').text().trim();
+            
+            let ref = $el.attr('data-id-product') || 
+                      $el.find('.product-reference').text().replace('Ref:', '').trim();
 
-        // BUSQUEDA TÉCNICA 2: Si el JSON-LD falla, usamos selectores clásicos mejorados
-        if (products.length === 0) {
-            $('.product-miniature').each((i, el) => {
-                const $el = $(el);
+            // CAPTURA DE IMAGEN: Buscamos el src de la imagen principal
+            let imagen = $el.find('.product-thumbnail img').attr('data-src') || 
+                         $el.find('.product-thumbnail img').attr('src');
+
+            let enlace = $el.find('.product-title a').attr('href');
+
+            if (nombre && precio) {
                 products.push({
-                    ref: $el.attr('data-id-product') || "N/A",
-                    nombre: $el.find('.product-title').text().trim(),
-                    precio: $el.find('.price').text().trim(),
-                    enlace: $el.find('a').attr('href')
+                    ref: ref || `ID-${i+1}`,
+                    nombre: nombre,
+                    precio: precio,
+                    imagen: imagen,
+                    enlace: enlace
                 });
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            total: products.length,
-            data: products
+            }
         });
 
+        res.status(200).json({ success: true, total: products.length, data: products });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

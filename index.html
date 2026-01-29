@@ -67,18 +67,25 @@
         }
 
         function renderTable(products) {
-            const tbody = document.getElementById('productTable');
-            tbody.innerHTML = products.map(p => `
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="p-4 font-mono text-sm text-gray-500">${p.ref}</td>
-                    <td class="p-4 font-medium text-gray-800">${p.nombre}</td>
-                    <td class="p-4 text-right font-bold text-green-600">${p.precio}</td>
-                    <td class="p-4 text-center">
-                        <a href="${p.enlace}" target="_blank" class="text-blue-500 hover:text-blue-700 underline text-sm">Ver producto</a>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    const tbody = document.getElementById('productTable');
+    tbody.innerHTML = products.map(p => `
+        <tr class="hover:bg-gray-50 transition-colors">
+            <td class="p-4 font-mono text-xs text-gray-500">${p.ref}</td>
+            <td class="p-4">
+                <div class="flex items-center gap-4">
+                    <img src="${p.imagen}" alt="led" class="w-12 h-12 object-cover rounded border bg-white shadow-sm">
+                    <span class="font-medium text-gray-800 text-sm">${p.nombre}</span>
+                </div>
+            </td>
+            <td class="p-4 text-right font-bold text-green-600">${p.precio}</td>
+            <td class="p-4 text-center">
+                <a href="${p.enlace}" target="_blank" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold hover:bg-blue-100 transition-all">
+                    Ver
+                </a>
+            </td>
+        </tr>
+    `).join('');
+}
 
         // Filtro de búsqueda
         document.getElementById('searchInput').addEventListener('input', (e) => {
