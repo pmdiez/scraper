@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor de Precios - EfectoLED</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Suavizar la carga de imágenes */
+        img { opacity: 0; transition: opacity 0.3s; }
+        img[src] { opacity: 1; }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
@@ -12,74 +17,103 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
                 <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Paneles LED 60x60</h1>
-                <p class="text-gray-500">Listado actualizado desde EfectoLED</p>
+                <p class="text-gray-500">Listado completo de la categoría en EfectoLED</p>
+                <div id="productCount" class="text-xs text-blue-500 mt-1 font-bold italic">
+                    Iniciando escaneo...
+                </div>
             </div>
-            <div id="status" class="bg-white px-4 py-2 rounded-lg shadow-sm border text-sm font-medium text-blue-600">
-                Cargando productos...
+            <div id="status" class="bg-white px-4 py-2 rounded-lg shadow-sm border text-sm font-medium text-blue-600 animate-pulse">
+                ⏳ Cargando categoría completa...
             </div>
         </div>
 
         <div class="mb-6">
-            <input type="text" id="searchInput" placeholder="Filtrar por referencia o nombre del panel..." 
-                class="w-full p-4 rounded-xl border-none shadow-md focus:ring-2 focus:ring-blue-500 outline-none text-lg">
+            <input type="text" id="searchInput" placeholder="Buscar por referencia (ej: 106784) o nombre..." 
+                class="w-full p-4 rounded-xl border-none shadow-md focus:ring-2 focus:ring-blue-500 outline-none text-lg transition-all">
         </div>
 
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Ref</th>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Producto</th>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Precio</th>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="productTable" class="divide-y divide-gray-50">
-                    </tbody>
-            </table>
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest w-28">Ref</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Producto</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Precio</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTable" class="divide-y divide-gray-50">
+                        </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
         let allProducts = [];
 
-        async function loadData() {
+        // Función para cargar los datos desde la API
+        async function loadData() { 
             try {
                 const res = await fetch('/api/scrape');
                 const json = await res.json();
+                
                 if (json.success) {
                     allProducts = json.data;
-                    render(allProducts);
-                    document.getElementById('status').innerText = `✅ ${allProducts.length} productos listados`;
+                    
+                    // Renderizar tabla
+                    render(allProducts); 
+                    
+                    // Actualizar Status principal
+                    const statusEl = document.getElementById('status');
+                    statusEl.innerText = `✅ Actualizado`;
+                    statusEl.classList.remove('animate-pulse', 'text-blue-600');
+                    statusEl.classList.add('text-green-600');
+
+                    // Actualizar contador detallado (la parte multi-página)
+                    const countEl = document.getElementById('productCount');
+                    countEl.innerText = `📦 ${allProducts.length} productos encontrados en ${json.pages || 1} páginas`;
+                } else {
+                    throw new Error("Error en la respuesta de la API");
                 }
             } catch (e) {
-                document.getElementById('status').innerText = '❌ Error de conexión';
+                console.error("Error:", e);
+                document.getElementById('status').innerText = '❌ Error al conectar';
+                document.getElementById('productCount').innerText = 'No se pudo obtener el listado.';
             }
         }
 
+        // Función para dibujar la tabla
         function render(data) {
             const container = document.getElementById('productTable');
+            
+            if (data.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-gray-400">No hay resultados para esta búsqueda</td></tr>`;
+                return;
+            }
+
             container.innerHTML = data.map(p => `
-                <tr class="hover:bg-blue-50/50 transition-all">
+                <tr class="hover:bg-blue-50/40 transition-all group">
                     <td class="p-4">
-    <span class="text-xs font-bold text-gray-400 block mb-1">REF</span>
-    <span class="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-        ${p.ref}
-    </span>
-</td>
+                        <span class="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-tighter">Referencia</span>
+                        <span class="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 shadow-sm">
+                            ${p.ref}
+                        </span>
+                    </td>
                     <td class="p-4">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-gray-50 rounded-lg overflow-hidden border flex-shrink-0">
-                                <img src="${p.imagen}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/100?text=LED'">
+                            <div class="w-14 h-14 bg-white rounded-lg overflow-hidden border border-gray-100 flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                <img src="${p.imagen}" alt="led" class="w-full h-full object-contain" onerror="this.src='https://via.placeholder.com/100?text=LED'">
                             </div>
-                            <span class="text-sm font-semibold text-gray-800 leading-tight">${p.nombre}</span>
+                            <span class="text-sm font-semibold text-gray-800 leading-tight max-w-md">${p.nombre}</span>
                         </div>
                     </td>
                     <td class="p-4 text-right">
-                        <span class="text-lg font-black text-blue-600">${p.precio}</span>
+                        <span class="text-lg font-black text-emerald-600">${p.precio}</span>
                     </td>
                     <td class="p-4 text-center">
-                        <a href="${p.enlace}" target="_blank" class="inline-block bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-600 transition-colors">
+                        <a href="${p.enlace}" target="_blank" class="inline-block bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-600 hover:shadow-lg transition-all active:scale-95">
                             VER WEB
                         </a>
                     </td>
@@ -87,15 +121,17 @@
             `).join('');
         }
 
+        // Buscador en tiempo real (Nombre + Referencia)
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
+            const val = e.target.value.toLowerCase().trim();
             const filtered = allProducts.filter(p => 
                 p.nombre.toLowerCase().includes(val) || 
-                p.ref.toLowerCase().includes(val)
+                String(p.ref).toLowerCase().includes(val)
             );
             render(filtered);
         });
 
+        // Iniciar carga
         loadData();
     </script>
 </body>
