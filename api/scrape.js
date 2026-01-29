@@ -14,26 +14,25 @@ export default async function handler(req, res) {
         const $ = cheerio.load(data);
         const products = [];
 
+        // Usamos solo el selector de artículo que PrestaShop nunca cambia
         $('.product-miniature').each((i, el) => {
             const $el = $(el);
             
             const nombre = $el.find('.product-title').text().trim();
-            const precio = $el.find('.price').last().text().trim() || $el.find('.current-price').text().trim();
+            const precio = $el.find('.price').last().text().trim();
             const enlace = $el.find('.product-title a').attr('href');
 
-            // --- EXTRACCIÓN DE REF (Cazador de números) ---
-            // Buscamos el texto "Ref" y capturamos los números que le siguen
-            const textoTarjeta = $el.text();
-            const matchRef = textoTarjeta.match(/Ref\s*(\d+)/i);
-            const ref = matchRef ? matchRef[1] : ($el.attr('data-id-product') || "N/A");
+            // --- LA REF (Búsqueda por texto crudo para no fallar) ---
+            const todoElTexto = $el.text();
+            const match = todoElTexto.match(/Ref\s*(\d+)/i);
+            const ref = match ? match[1] : $el.attr('data-id-product');
 
-            // --- EXTRACCIÓN DE IMAGEN ---
-            // Miramos primero data-src (por si hay lazy-load) y luego src
+            // --- LA FOTO ---
             const imagen = $el.find('img').attr('data-src') || $el.find('img').attr('src');
 
             if (nombre && precio) {
                 products.push({
-                    ref: ref,
+                    ref: ref || "S/R",
                     nombre: nombre,
                     precio: precio,
                     imagen: imagen,
