@@ -1,55 +1,58 @@
 const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
-const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
-    let browser = null;
+  let browser = null;
+  try {
+    // 1. Lanzar el navegador con configuraciones de bajo consumo
+    browser = await puppeteer.launch({
+      args: [...chromium.args, "--disable-gpu", "--disable-dev-shm-usage"],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
 
-    try {
-        // Configuramos el navegador para entorno Serverless
-        browser = await puppeteer.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
-            ignoreHTTPSErrors: true,
-        });
+    const page = await browser.newPage();
+    
+    // Evitamos cargar imágenes y CSS para ahorrar memoria y tiempo
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      if (['image', 'stylesheet', 'font'].includes(req.resourceType())) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
 
-        const page = await browser.newPage();
+    // 2. Navegar a la web
+    await page.goto('https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm', {
+      waitUntil: 'networkidle2',
+      timeout: 25000
+    });
+
+    // 3. Extraer datos con un selector más simple
+    const products = await page.evaluate(() => {
+      const results = [];
+      const items = document.querySelectorAll('.product-miniature');
+      items.forEach(el => {
+        const nombre = el.querySelector('.product-title')?.innerText.trim();
+        const precio = el.querySelector('.price')?.innerText.trim();
+        const ref = el.getAttribute('data-id-product');
+        const enlace = el.querySelector('a')?.href;
         
-        // Vamos a la URL
-        await page.goto('https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm', {
-            waitUntil: 'networkidle2', // Espera a que la red esté tranquila
-            timeout: 30000
-        });
+        if (nombre && precio) {
+          results.push({ ref: ref || 'N/A', nombre, precio, enlace });
+        }
+      });
+      return results;
+    });
 
-        // Obtenemos el HTML después de que JS se haya ejecutado
-        const content = await page.content();
-        const $ = cheerio.load(content);
-        const products = [];
+    await browser.close();
+    res.status(200).json({ success: true, total: products.length, data: products });
 
-        $('.product-miniature').each((i, el) => {
-            const $el = $(el);
-            const nombre = $el.find('.product-title').text().trim();
-            const precio = $el.find('.price').text().trim();
-            const ref = $el.attr('data-id-product') || "N/A";
-            const link = $el.find('.product-title a').attr('href');
-
-            if (nombre && precio) {
-                products.push({ ref, nombre, precio, enlace: link });
-            }
-        });
-
-        await browser.close();
-
-        res.status(200).json({
-            success: true,
-            total: products.length,
-            data: products
-        });
-
-    } catch (error) {
-        if (browser !== null) await browser.close();
-        res.status(500).json({ success: false, error: error.message });
-    }
+  } catch (error) {
+    if (browser) await browser.close();
+    console.error("LOG_ERROR:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 }
