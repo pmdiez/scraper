@@ -7,43 +7,49 @@ export default async function handler(req, res) {
     try {
         const { data } = await axios.get(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                'Accept-Language': 'es-ES,es;q=0.8',
-                'Cache-Control': 'no-cache'
-            },
-            timeout: 8000 // 8 segundos de espera máximo
+                'Accept-Language': 'es-ES,es;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Referer': 'https://www.google.com/'
+            }
         });
 
         const $ = cheerio.load(data);
         const products = [];
 
-        // Buscamos en los contenedores de artículos comunes en PrestaShop
-        $('article.product-miniature, .product-miniature').each((i, el) => {
-            // Intentamos varios selectores para el nombre
-            const title = $(el).find('.product-title, h2, h3').first().text().trim();
+        // Buscamos de forma más agresiva en cualquier artículo o div que huela a producto
+        $('article, .product-miniature, .js-product-miniature').each((i, el) => {
+            const container = $(el);
             
-            // Intentamos varios selectores para el precio
-            const price = $(el).find('.price, .product-price, .current-price').first().text().trim();
+            // 1. Intentar obtener el nombre
+            const nombre = container.find('h1, h2, h3, .product-title').first().text().trim();
             
-            // Extraer la Referencia (ID de producto)
-            const reference = $(el).attr('data-id-product') || "Ref-" + i;
+            // 2. Intentar obtener el precio (buscando el símbolo €)
+            let precio = container.find('.price, .current-price, span:contains("€")').first().text().trim();
             
-            // Enlace del producto
-            const link = $(el).find('a').first().attr('href');
+            // 3. Intentar obtener la referencia (A veces está en un data-id o dentro del texto)
+            let ref = container.attr('data-id-product') || 
+                      container.find('.product-reference, [itemprop="sku"]').text().trim();
+            
+            // 4. Limpieza de precio (si trae "Antes X€ 8€", queremos el último)
+            if (precio.includes('\n')) {
+                const precios = precio.split('\n').map(p => p.trim()).filter(p => p.includes('€'));
+                precio = precios[precios.length - 1];
+            }
 
-            if (title && price) {
+            // Si al menos tenemos nombre y precio, lo damos por válido
+            if (nombre && precio && precio !== "") {
                 products.push({
-                    ref: reference,
-                    nombre: title,
-                    precio: price,
-                    enlace: link
+                    ref: ref || `ID-${i+1}`, // Si no hay ref, ponemos un ID temporal
+                    nombre: nombre,
+                    precio: precio,
+                    enlace: container.find('a').attr('href') || url
                 });
             }
         });
 
-        // Respuesta con cabecera para evitar caché
-        res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate');
         res.status(200).json({
             success: true,
             total: products.length,
@@ -51,11 +57,6 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error("Error scraping:", error.message);
-        res.status(500).json({ 
-            success: false, 
-            error: "No se pudo obtener datos de la web externa.",
-            details: error.message 
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 }
