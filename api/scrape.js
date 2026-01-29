@@ -2,8 +2,8 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
-    // Añadimos un timestamp para que la URL sea siempre "nueva" para su servidor
-    const url = `https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm?random=${Date.now()}`;
+    // Añadimos parámetros para forzar a PrestaShop a darnos la lista limpia
+    const url = 'https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm?resultsPerPage=999';
     
     try {
         const { data } = await axios.get(url, {
@@ -11,9 +11,8 @@ export default async function handler(req, res) {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
                 'Accept-Language': 'es-ES,es;q=0.9',
-                'Referer': 'https://www.google.com/', // Hacemos creer que venimos de Google
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Referer': 'https://www.google.com/',
+                'Cache-Control': 'no-cache'
             },
             timeout: 15000
         });
@@ -21,37 +20,54 @@ export default async function handler(req, res) {
         const $ = cheerio.load(data);
         const products = [];
 
-        // Buscamos en el contenedor de miniaturas
-        $('.product-miniature').each((i, el) => {
+        // BUSCADOR UNIVERSAL: Buscamos cualquier cosa que parezca un producto
+        const selectors = [
+            '.product-miniature',
+            'article',
+            '.js-product-miniature',
+            '[data-id-product]'
+        ];
+
+        $(selectors.join(',')).each((i, el) => {
             const $el = $(el);
             
-            const nombre = $el.find('.product-title').text().trim();
-            const precio = $el.find('.price').last().text().trim() || $el.find('.current-price').text().trim();
-            const enlace = $el.find('.product-title a').attr('href');
+            // Nombre: buscamos en títulos o enlaces
+            const nombre = $el.find('.product-title, .h3, h2, a.product-name').first().text().trim();
+            
+            // Precio: buscamos el último precio (el rebajado)
+            let precio = $el.find('.price, .current-price').last().text().trim();
+            
+            // REFERENCIA: Buscamos el texto exacto que viste en el frontend
+            let ref = "N/A";
+            // Escaneamos todos los elementos de la tarjeta buscando el patrón de Ref
+            $el.find('*').each((_, sub) => {
+                const text = $(sub).text();
+                if (text.includes('Ref')) {
+                    const match = text.match(/\d+/);
+                    if (match) ref = match[0];
+                }
+            });
+
+            // Si no hay Ref por texto, intentamos el ID de producto
+            if (ref === "N/A") ref = $el.attr('data-id-product') || "N/A";
+
+            // Imagen y Enlace
             const imagen = $el.find('img').attr('data-src') || $el.find('img').attr('src');
+            const enlace = $el.find('a').attr('href');
 
-            // --- EXTRACCIÓN DE REF POR TEXTO ---
-            // Buscamos cualquier elemento dentro de la tarjeta que tenga números de 5 o 6 dígitos
-            // que es el formato de Ref de EfectoLED.
-            const tarjetaTexto = $el.text();
-            const refMatch = tarjetaTexto.match(/Ref\s*(\d{5,7})/i) || tarjetaTexto.match(/(\d{5,7})/);
-            const ref = refMatch ? refMatch[1] : ($el.attr('data-id-product') || "N/A");
-
-            if (nombre && precio) {
+            if (nombre && precio && products.length < 50) {
                 products.push({ ref, nombre, precio, imagen, enlace });
             }
         });
 
-        // Si después de todo sigue dando 0, devolvemos un pedazo del HTML para debuguear
-        if (products.length === 0) {
-            return res.status(200).json({
-                success: false,
-                message: "La web devolvió una página vacía o bloqueada.",
-                debug: data.substring(0, 300) // Veremos si dice "Cloudflare" o "Access Denied"
-            });
-        }
-
-        res.status(200).json({ success: true, total: products.length, data: products });
+        // RESPUESTA
+        res.status(200).json({
+            success: true,
+            total: products.length,
+            data: products,
+            // Solo para debug si vuelve a dar 0
+            empty: products.length === 0 ? data.substring(0, 500) : null
+        });
 
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
