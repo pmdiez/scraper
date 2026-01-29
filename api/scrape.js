@@ -14,32 +14,48 @@ export default async function handler(req, res) {
         const $ = cheerio.load(data);
         const products = [];
 
-        // Usamos solo el selector de artículo que PrestaShop nunca cambia
-        $('.product-miniature').each((i, el) => {
-            const $el = $(el);
-            
-            const nombre = $el.find('.product-title').text().trim();
-            const precio = $el.find('.price').last().text().trim();
-            const enlace = $el.find('.product-title a').attr('href');
-
-            // --- LA REF (Búsqueda por texto crudo para no fallar) ---
-            const todoElTexto = $el.text();
-            const match = todoElTexto.match(/Ref\s*(\d+)/i);
-            const ref = match ? match[1] : $el.attr('data-id-product');
-
-            // --- LA FOTO ---
-            const imagen = $el.find('img').attr('data-src') || $el.find('img').attr('src');
-
-            if (nombre && precio) {
-                products.push({
-                    ref: ref || "S/R",
-                    nombre: nombre,
-                    precio: precio,
-                    imagen: imagen,
-                    enlace: enlace
-                });
-            }
+        // BUSQUEDA TÉCNICA 1: JSON-LD (Mantenemos tu lógica pero añadimos Imagen)
+        $('script[type="application/ld+json"]').each((i, el) => {
+            try {
+                const json = JSON.parse($(el).html());
+                if (json.itemListElement) {
+                    json.itemListElement.forEach(item => {
+                        const p = item.item || item;
+                        if (p.name) {
+                            products.push({
+                                // Si sku no existe, buscamos el ID en la URL
+                                ref: p.sku || p.mpn || (p.url ? p.url.split('/').pop().split('-')[0] : "N/A"),
+                                nombre: p.name,
+                                precio: p.offers ? `${p.offers.price} ${p.offers.priceCurrency}` : "Ver web",
+                                imagen: p.image || "", // Añadimos la imagen del JSON
+                                enlace: p.url || url
+                            });
+                        }
+                    });
+                }
+            } catch (e) { }
         });
+
+        // BUSQUEDA TÉCNICA 2: Si el JSON-LD falla, usamos selectores clásicos
+        if (products.length === 0) {
+            $('.product-miniature').each((i, el) => {
+                const $el = $(el);
+                
+                // Intentamos cazar el número de referencia en el texto
+                const textoTarjeta = $el.text();
+                const matchRef = textoTarjeta.match(/Ref\s*(\d+)/i);
+                const ref = matchRef ? matchRef[1] : ($el.attr('data-id-product') || "N/A");
+
+                products.push({
+                    ref: ref,
+                    nombre: $el.find('.product-title').text().trim(),
+                    precio: $el.find('.price').text().trim(),
+                    // Buscamos data-src (lazy load) o src normal
+                    imagen: $el.find('img').attr('data-src') || $el.find('img').attr('src') || "",
+                    enlace: $el.find('a').attr('href')
+                });
+            });
+        }
 
         res.status(200).json({
             success: true,
