@@ -14,39 +14,33 @@ export default async function handler(req, res) {
         const $ = cheerio.load(data);
         const products = [];
 
-        // BUSQUEDA TÉCNICA 1: Buscamos en los scripts de datos estructurados (JSON-LD)
-        $('script[type="application/ld+json"]').each((i, el) => {
-            try {
-                const json = JSON.parse($(el).html());
-                // Si el JSON tiene una lista de items (itemListElement)
-                if (json.itemListElement) {
-                    json.itemListElement.forEach(item => {
-                        const p = item.item || item;
-                        if (p.name) {
-                            products.push({
-                                ref: p.sku || p.mpn || "N/A",
-                                nombre: p.name,
-                                precio: p.offers ? `${p.offers.price} ${p.offers.priceCurrency}` : "Ver web",
-                                enlace: p.url || url
-                            });
-                        }
-                    });
-                }
-            } catch (e) { /* Ignorar scripts mal formados */ }
-        });
+        $('.product-miniature').each((i, el) => {
+            const $el = $(el);
+            
+            const nombre = $el.find('.product-title').text().trim();
+            const precio = $el.find('.price').last().text().trim() || $el.find('.current-price').text().trim();
+            const enlace = $el.find('.product-title a').attr('href');
 
-        // BUSQUEDA TÉCNICA 2: Si el JSON-LD falla, usamos selectores clásicos mejorados
-        if (products.length === 0) {
-            $('.product-miniature').each((i, el) => {
-                const $el = $(el);
+            // --- EXTRACCIÓN DE REF (Cazador de números) ---
+            // Buscamos el texto "Ref" y capturamos los números que le siguen
+            const textoTarjeta = $el.text();
+            const matchRef = textoTarjeta.match(/Ref\s*(\d+)/i);
+            const ref = matchRef ? matchRef[1] : ($el.attr('data-id-product') || "N/A");
+
+            // --- EXTRACCIÓN DE IMAGEN ---
+            // Miramos primero data-src (por si hay lazy-load) y luego src
+            const imagen = $el.find('img').attr('data-src') || $el.find('img').attr('src');
+
+            if (nombre && precio) {
                 products.push({
-                    ref: $el.attr('data-id-product') || "N/A",
-                    nombre: $el.find('.product-title').text().trim(),
-                    precio: $el.find('.price').text().trim(),
-                    enlace: $el.find('a').attr('href')
+                    ref: ref,
+                    nombre: nombre,
+                    precio: precio,
+                    imagen: imagen,
+                    enlace: enlace
                 });
-            });
-        }
+            }
+        });
 
         res.status(200).json({
             success: true,
