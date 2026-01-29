@@ -3,43 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scraper EfectoLED - Paneles 60x60</title>
+    <title>Monitor de Precios - EfectoLED</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <div class="max-w-6xl mx-auto p-6">
-        <header class="mb-10 text-center">
-            <h1 class="text-4xl font-bold text-gray-800">Panel Control de Precios LED</h1>
-            <p class="text-gray-600 mt-2">Buscador de paneles 60x60cm en tiempo real</p>
-        </header>
-
-        <div class="bg-white p-6 rounded-xl shadow-sm mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div class="relative w-full md:w-1/2">
-                <input type="text" id="searchInput" placeholder="Buscar por Referencia o Nombre..." 
-                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
-                <div class="absolute left-3 top-2.5 text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
+    <div class="max-w-5xl mx-auto py-10 px-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Paneles LED 60x60</h1>
+                <p class="text-gray-500">Listado actualizado desde EfectoLED</p>
             </div>
-            <div id="status" class="text-sm font-medium text-blue-600 bg-blue-50 px-4 py-2 rounded-full italic">
-                Cargando datos...
+            <div id="status" class="bg-white px-4 py-2 rounded-lg shadow-sm border text-sm font-medium text-blue-600">
+                Cargando productos...
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-800 text-white">
+        <div class="mb-6">
+            <input type="text" id="searchInput" placeholder="Filtrar por referencia o nombre del panel..." 
+                class="w-full p-4 rounded-xl border-none shadow-md focus:ring-2 focus:ring-blue-500 outline-none text-lg">
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="p-4 uppercase text-xs font-semibold">Ref</th>
-                        <th class="p-4 uppercase text-xs font-semibold">Producto</th>
-                        <th class="p-4 uppercase text-xs font-semibold text-right">Precio</th>
-                        <th class="p-4 uppercase text-xs font-semibold text-center">Acción</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Ref</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Producto</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Precio</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Acción</th>
                     </tr>
                 </thead>
-                <tbody id="productTable" class="divide-y divide-gray-200">
+                <tbody id="productTable" class="divide-y divide-gray-50">
                     </tbody>
             </table>
         </div>
@@ -48,50 +43,59 @@
     <script>
         let allProducts = [];
 
-        async function fetchProducts() {
+        async function loadData() {
             try {
-                const response = await fetch('/api/scrape');
-                const result = await response.json();
-                
-                if (result.success) {
-                    allProducts = result.data;
-                    renderTable(allProducts);
-                    document.getElementById('status').innerText = `${allProducts.length} productos cargados`;
-                } else {
-                    throw new Error('Error en la API');
+                const res = await fetch('/api/scrape');
+                const json = await res.json();
+                if (json.success) {
+                    allProducts = json.data;
+                    render(allProducts);
+                    document.getElementById('status').innerText = `✅ ${allProducts.length} productos listados`;
                 }
-            } catch (error) {
-                document.getElementById('status').innerText = 'Error al cargar datos';
-                document.getElementById('status').classList.replace('text-blue-600', 'text-red-600');
+            } catch (e) {
+                document.getElementById('status').innerText = '❌ Error de conexión';
             }
         }
 
-        function renderTable(products) {
-            const tbody = document.getElementById('productTable');
-            tbody.innerHTML = products.map(p => `
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="p-4 font-mono text-sm text-gray-500">${p.ref}</td>
-                    <td class="p-4 font-medium text-gray-800">${p.nombre}</td>
-                    <td class="p-4 text-right font-bold text-green-600">${p.precio}</td>
+        function render(data) {
+            const container = document.getElementById('productTable');
+            container.innerHTML = data.map(p => `
+                <tr class="hover:bg-blue-50/50 transition-all">
+                    <td class="p-4">
+                        <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tighter border">
+                            ${p.ref}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-gray-50 rounded-lg overflow-hidden border flex-shrink-0">
+                                <img src="${p.imagen}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/100?text=LED'">
+                            </div>
+                            <span class="text-sm font-semibold text-gray-800 leading-tight">${p.nombre}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 text-right">
+                        <span class="text-lg font-black text-blue-600">${p.precio}</span>
+                    </td>
                     <td class="p-4 text-center">
-                        <a href="${p.enlace}" target="_blank" class="text-blue-500 hover:text-blue-700 underline text-sm">Ver producto</a>
+                        <a href="${p.enlace}" target="_blank" class="inline-block bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-600 transition-colors">
+                            VER WEB
+                        </a>
                     </td>
                 </tr>
             `).join('');
         }
 
-        // Filtro de búsqueda
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
+            const val = e.target.value.toLowerCase();
             const filtered = allProducts.filter(p => 
-                p.ref.toLowerCase().includes(term) || 
-                p.nombre.toLowerCase().includes(term)
+                p.nombre.toLowerCase().includes(val) || 
+                p.ref.toLowerCase().includes(val)
             );
-            renderTable(filtered);
+            render(filtered);
         });
 
-        // Carga inicial
-        fetchProducts();
+        loadData();
     </script>
 </body>
 </html>
