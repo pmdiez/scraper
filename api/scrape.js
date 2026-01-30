@@ -6,28 +6,55 @@ export default async function handler(req, res) {
     const allProducts = [];
     
     try {
-        // 1. PRIMERA PETICIÓN: Para obtener la primera página y saber cuántas hay en total
-        const firstPageData = await fetchPage(baseUrl + '?page=1');
+        // 1. PRIMERA PETICIÓN
+        const firstPageData = await fetchPage(`${baseUrl}?page=1`);
         allProducts.push(...firstPageData.products);
 
-        // 2. DETECTAR TOTAL DE PÁGINAS
-        // Buscamos el último número en la lista de paginación
         const $ = firstPageData.$;
-        const paginationLinks = $('.page-list li a.js-search-link');
         let totalPages = 1;
 
-        paginationLinks.each((i, el) => {
-            const pageNum = parseInt($(el).text().trim());
-            if (!isNaN(pageNum) && pageNum > totalPages) {
-                totalPages = pageNum;
+        // 2. DETECTOR DE PÁGINAS MEJORADO
+        // Buscamos en cualquier enlace dentro de la paginación que tenga "page="
+        $('.pagination a, .page-list a').each((i, el) => {
+            const href = $(el).attr('href');
+            const text = $(el).text().trim();
+            
+            // Intento A: Extraer número del atributo href
+            if (href && href.includes('page=')) {
+                const match = href.match(/page=(\d+)/);
+                if (match) {
+                    const p = parseInt(match[1]);
+                    if (p > totalPages) totalPages = p;
+                }
+            }
+            
+            // Intento B: Extraer número del texto del enlace (por si es el botón "17")
+            const numText = parseInt(text);
+            if (!isNaN(numText) && numText > totalPages) {
+                totalPages = numText;
             }
         });
 
-        // 3. BUCLE PARA EL RESTO DE PÁGINAS (si hay más de una)
+        // 3. SEGURO POR SI FALLA LA PAGINACIÓN (Cálculo por total de productos)
+        // EfectoLED suele decir "Hay X productos"
+        if (totalPages === 1) {
+            const totalText = $('.total-products, .products-nb-per-page').text();
+            const totalMatch = totalText.match(/(\d+)/);
+            if (totalMatch) {
+                const totalItems = parseInt(totalMatch[1]);
+                // PrestaShop suele mostrar 20 o 24 productos por página
+                const itemsPerPage = 24; 
+                totalPages = Math.ceil(totalItems / itemsPerPage);
+            }
+        }
+
+        // 4. BUCLE DE PÁGINAS (Con límite de seguridad)
         if (totalPages > 1) {
-            // Creamos un array de promesas para ir más rápido (peticiones en paralelo)
             const promises = [];
-            for (let i = 2; i <= totalPages; i++) {
+            // Limitamos a 20 para no saturar Vercel (Hobby limit)
+            const limit = Math.min(totalPages, 20); 
+            
+            for (let i = 2; i <= limit; i++) {
                 promises.push(fetchPage(`${baseUrl}?page=${i}`));
             }
 
@@ -49,29 +76,34 @@ export default async function handler(req, res) {
     }
 }
 
-// FUNCIÓN AUXILIAR PARA SCRAPEAR UNA PÁGINA INDIVIDUAL
 async function fetchPage(url) {
+    // Añadimos un pequeño delay aleatorio para no ser detectados como bot agresivo
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
+
     const { data } = await axios.get(url, {
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept-Language': 'es-ES,es;q=0.9'
         }
     });
 
     const $ = cheerio.load(data);
     const products = [];
 
-    // Usamos la lógica que ya sabemos que funciona (JSON-LD + Fallback)
+    // Lógica de extracción (JSON-LD)
     $('script[type="application/ld+json"]').each((i, el) => {
         try {
             const json = JSON.parse($(el).html());
-            if (json.itemListElement) {
-                json.itemListElement.forEach(item => {
+            const items = json.itemListElement || (json['@type'] === 'ItemList' ? json.itemListElement : null);
+            
+            if (items) {
+                items.forEach(item => {
                     const p = item.item || item;
                     if (p.name) {
                         products.push({
                             ref: p.sku || p.mpn || (p.url ? p.url.split('/').pop().split('-')[0] : "N/A"),
                             nombre: p.name,
-                            precio: p.offers ? `${p.offers.price} ${p.offers.priceCurrency}` : "Ver web",
+                            precio: p.offers ? `${p.offers.price || p.offers.offers[0].price} €` : "Ver web",
                             imagen: p.image || "",
                             enlace: p.url || url
                         });
@@ -81,17 +113,15 @@ async function fetchPage(url) {
         } catch (e) { }
     });
 
-    // Fallback si el JSON falla en alguna página
+    // Fallback Manual (Si el JSON-LD viene vacío en páginas profundas)
     if (products.length === 0) {
         $('.product-miniature').each((i, el) => {
             const $el = $(el);
-            const textoTarjeta = $el.text();
-            const matchRef = textoTarjeta.match(/Ref\s*(\d+)/i);
             products.push({
-                ref: matchRef ? matchRef[1] : ($el.attr('data-id-product') || "N/A"),
+                ref: $el.attr('data-id-product') || "N/A",
                 nombre: $el.find('.product-title').text().trim(),
                 precio: $el.find('.price').text().trim(),
-                imagen: $el.find('img').attr('data-src') || $el.find('img').attr('src') || "",
+                imagen: $el.find('img').attr('data-src') || $el.find('img').attr('src'),
                 enlace: $el.find('a').attr('href')
             });
         });
@@ -99,4 +129,3 @@ async function fetchPage(url) {
 
     return { products, $ };
 }
-
