@@ -7,72 +7,77 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* Diseño responsivo para tablas en móvil */
+        /* Diseño responsivo: De tabla a tarjetas en móviles */
         @media (max-width: 768px) {
             .mobile-stack thead { display: none; }
             .mobile-stack tr { 
                 display: block; 
-                margin-bottom: 1.5rem; 
+                margin-bottom: 1.25rem; 
                 border: 1px solid #e5e7eb;
-                border-radius: 1rem;
+                border-radius: 1.25rem;
                 background: white;
                 padding: 1rem;
-                shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
             }
             .mobile-stack td { 
                 display: flex; 
                 justify-content: space-between; 
                 align-items: center;
-                padding: 0.75rem 0;
-                border-bottom: 1px solid #f3f4f6;
+                padding: 0.6rem 0;
+                border-bottom: 1px solid #f9fafb;
             }
-            .mobile-stack td:last-child { border: none; }
+            .mobile-stack td:last-child { border: none; padding-top: 1rem; }
             .mobile-stack td::before {
                 content: attr(data-label);
-                font-weight: 700;
-                color: #6b7280;
-                font-size: 0.7rem;
+                font-weight: 800;
+                color: #9ca3af;
+                font-size: 0.65rem;
                 text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
-            .mobile-stack .product-cell { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="max-w-6xl mx-auto px-4 py-6">
+<body class="bg-gray-50 min-h-screen font-sans antialiased text-gray-900">
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
         
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
             <div>
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight">EfectoLED Monitor</h1>
-                <p id="productCount" class="text-blue-600 font-bold text-sm">🔄 Cargando catálogo completo...</p>
+                <h1 class="text-4xl font-black tracking-tight text-gray-900">EfectoLED <span class="text-blue-600 text-2xl">PRO</span></h1>
+                <p id="productCount" class="text-gray-500 font-medium mt-1 italic">Escaneando catálogo completo...</p>
             </div>
             
             <div class="flex w-full md:w-auto gap-3">
-                <button onclick="exportToExcel()" id="exportBtn" class="hidden flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg">
-                    Descargar Excel
+                <button onclick="exportToExcel()" id="exportBtn" class="hidden flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Excel
                 </button>
-                <div id="status" class="flex-1 bg-white px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold flex items-center justify-center shadow-sm">
-                    ⏳ CONECTANDO...
+                <div id="status" class="flex-1 md:flex-none bg-white px-5 py-3 rounded-2xl border border-gray-200 text-xs font-black flex items-center justify-center shadow-sm text-blue-600 tracking-widest uppercase">
+                    ⏳ Conectando...
                 </div>
             </div>
         </div>
 
-        <div class="relative mb-8">
-            <input type="text" id="searchInput" placeholder="Buscar por nombre o referencia..." 
-                class="w-full p-5 rounded-2xl shadow-sm border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500 text-lg transition-all">
+        <div class="relative mb-8 group">
+            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+            <input type="text" id="searchInput" placeholder="Filtrar por nombre o referencia..." 
+                class="w-full p-5 pl-14 rounded-3xl shadow-sm border border-gray-200 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-lg transition-all placeholder:text-gray-300">
         </div>
 
-        <div class="overflow-hidden md:bg-white md:rounded-3xl md:shadow-xl md:border md:border-gray-100">
+        <div class="md:bg-white md:rounded-[2rem] md:shadow-2xl md:border md:border-gray-100 md:overflow-hidden">
             <table class="w-full mobile-stack">
                 <thead class="bg-gray-900 text-white hidden md:table-header-group">
                     <tr>
-                        <th class="p-5 text-xs font-black uppercase tracking-widest">Ref</th>
-                        <th class="p-5 text-xs font-black uppercase tracking-widest">Producto</th>
-                        <th class="p-5 text-xs font-black uppercase tracking-widest text-right">Precio</th>
-                        <th class="p-5 text-xs font-black uppercase tracking-widest text-center">Acción</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Referencia</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Producto</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-[0.2em] opacity-60 text-right">Precio</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-[0.2em] opacity-60 text-center">Acceso</th>
                     </tr>
                 </thead>
-                <tbody id="productTable" class="md:divide-y md:divide-gray-100">
+                <tbody id="productTable" class="md:divide-y md:divide-gray-50">
                     </tbody>
             </table>
         </div>
@@ -87,13 +92,27 @@
                 const json = await res.json();
                 
                 if (json.success) {
-                    allProducts = json.data;
+                    // 1. FILTRADO Y LIMPIEZA: Eliminamos basura sin precio o sin ref
+                    let cleanData = json.data.filter(p => {
+                        const validRef = p.ref && p.ref !== "N/A";
+                        const validPrice = p.precio && p.precio !== "Ver web" && p.precio.trim() !== "";
+                        return validRef && validPrice;
+                    });
+
+                    // 2. DEDUPLICACIÓN: Evitamos que el mismo producto aparezca dos veces
+                    const uniqueRefs = new Set();
+                    allProducts = cleanData.filter(p => {
+                        if (uniqueRefs.has(p.ref)) return false;
+                        uniqueRefs.add(p.ref);
+                        return true;
+                    });
+                    
                     render(allProducts);
+                    
                     document.getElementById('status').innerText = '✅ ACTUALIZADO';
-                    document.getElementById('productCount').innerText = `📦 ${allProducts.length} productos listados (20 páginas)`;
+                    document.getElementById('status').classList.replace('text-blue-600', 'text-emerald-600');
+                    document.getElementById('productCount').innerText = `${allProducts.length} productos reales encontrados`;
                     document.getElementById('exportBtn').classList.remove('hidden');
-                } else {
-                    document.getElementById('status').innerText = '❌ ERROR API';
                 }
             } catch (e) {
                 document.getElementById('status').innerText = '❌ ERROR RED';
@@ -103,26 +122,30 @@
         function render(data) {
             const tbody = document.getElementById('productTable');
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-gray-500 font-bold">No se encontraron productos</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="p-20 text-center text-gray-400 font-medium italic">No hay productos que coincidan con la búsqueda</td></tr>';
                 return;
             }
 
             tbody.innerHTML = data.map(p => `
-                <tr class="hover:bg-blue-50/40 transition-colors">
-                    <td class="p-4 md:p-5" data-label="Referencia">
-                        <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold font-mono border border-blue-100 italic">#${p.ref}</span>
+                <tr class="hover:bg-blue-50/50 transition-all group">
+                    <td class="p-4 md:p-6" data-label="Referencia">
+                        <span class="bg-white text-blue-600 border border-blue-100 px-3 py-1.5 rounded-xl text-xs font-black font-mono shadow-sm">
+                            ${p.ref}
+                        </span>
                     </td>
-                    <td class="p-4 md:p-5" data-label="Producto">
+                    <td class="p-4 md:p-6" data-label="Producto">
                         <div class="flex items-center gap-4 text-left w-full">
-                            <img src="${p.imagen}" class="w-12 h-12 object-contain border bg-white rounded-xl shadow-sm flex-shrink-0" onerror="this.src='https://via.placeholder.com/60?text=LED'">
-                            <span class="text-sm font-bold text-gray-800 leading-tight">${p.nombre}</span>
+                            <img src="${p.imagen}" class="w-14 h-14 object-contain border border-gray-100 bg-white rounded-2xl shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform" onerror="this.src='https://via.placeholder.com/80?text=LED'">
+                            <span class="text-sm font-bold text-gray-800 leading-snug">${p.nombre}</span>
                         </div>
                     </td>
-                    <td class="p-4 md:p-5 text-right" data-label="Precio">
-                        <span class="text-xl md:text-lg font-black text-emerald-600">${p.precio}</span>
+                    <td class="p-4 md:p-6 text-right" data-label="Precio">
+                        <span class="text-2xl md:text-xl font-black text-emerald-600 tracking-tighter">${p.precio}</span>
                     </td>
-                    <td class="p-4 md:p-5 text-center" data-label="Acción">
-                        <a href="${p.enlace}" target="_blank" class="w-full md:w-auto block md:inline-block bg-gray-900 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-blue-600 transition-all text-center">WEB</a>
+                    <td class="p-4 md:p-6 text-center" data-label="Acción">
+                        <a href="${p.enlace}" target="_blank" class="w-full md:w-auto block md:inline-block bg-gray-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:shadow-lg transition-all active:scale-95 shadow-md">
+                            Ver Web
+                        </a>
                     </td>
                 </tr>
             `).join('');
@@ -134,12 +157,17 @@
                 'REF': p.ref,
                 'PRODUCTO': p.nombre,
                 'PRECIO': p.precio,
-                'URL': p.enlace
+                'ENLACE': p.enlace
             }));
             const ws = XLSX.utils.json_to_sheet(dataToExport);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Catálogo");
-            XLSX.writeFile(wb, `EfectoLED_Export.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "Precios LED");
+            
+            // Auto-ancho de columnas
+            ws['!cols'] = [{ wch: 15 }, { wch: 60 }, { wch: 15 }, { wch: 50 }];
+            
+            const hoy = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `EfectoLED_Export_${hoy}.xlsx`);
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
