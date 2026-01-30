@@ -8,85 +8,81 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        /* Efecto de cristal para la cabecera fija */
+        body { font-family: 'Inter', sans-serif; font-size: 16px; }
         .sticky-header {
             position: sticky;
             top: 0;
             z-index: 50;
-            background: rgba(248, 250, 252, 0.9); /* slate-50 con opacidad */
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid #e2e8f0;
+            background: rgba(248, 250, 252, 0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 2px solid #e2e8f0;
         }
         @media (max-width: 768px) {
-            .mobile-card { display: block; border-bottom: 1px solid #f1f5f9; padding: 1rem 0; }
+            .mobile-card { display: block; border-bottom: 2px solid #f1f5f9; padding: 1.5rem 0; }
             .desktop-table { display: none; }
         }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
 
-    <header class="sticky-header pt-4 pb-2 shadow-sm">
+    <header class="sticky-header pt-6 pb-4 shadow-md">
         <div class="max-w-6xl mx-auto px-4">
             
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-                <div class="flex items-center gap-2">
-                    <div class="bg-indigo-600 p-1.5 rounded-lg text-white font-bold text-sm">PM</div>
-                    <h1 class="text-lg font-800 tracking-tighter uppercase">Price<span class="text-indigo-600">Monitor</span></h1>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 p-2 rounded-xl text-white font-bold text-lg shadow-lg shadow-indigo-200">PM</div>
+                    <h1 class="text-2xl font-800 tracking-tighter uppercase">Price<span class="text-indigo-600">Monitor</span></h1>
                 </div>
                 
-                <div class="flex bg-slate-200/50 p-1 rounded-xl w-full md:w-auto shadow-inner">
-                    <button onclick="setStore('efectoled')" id="s-efectoled" class="flex-1 px-5 py-1.5 rounded-lg text-xs font-bold transition-all">EfectoLED</button>
-                    <button onclick="setStore('greenice')" id="s-greenice" class="flex-1 px-5 py-1.5 rounded-lg text-xs font-bold transition-all">GreenIce</button>
+                <div class="flex bg-slate-200 p-1.5 rounded-2xl w-full md:w-auto shadow-inner">
+                    <button onclick="setStore('efectoled')" id="s-efectoled" class="flex-1 px-8 py-3 rounded-xl text-sm font-bold transition-all">EfectoLED</button>
+                    <button onclick="setStore('greenice')" id="s-greenice" class="flex-1 px-8 py-3 rounded-xl text-sm font-bold transition-all">GreenIce</button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-12 gap-2 pb-2">
-                <div class="col-span-6 md:col-span-2">
-                    <select id="catSelector" onchange="loadData()" class="w-full bg-white border border-slate-200 py-2.5 px-3 rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-xs text-slate-700 appearance-none cursor-pointer">
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-12 md:col-span-3">
+                    <select id="catSelector" onchange="loadData()" class="w-full bg-white border-2 border-slate-200 py-3.5 px-4 rounded-2xl shadow-sm outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-base text-slate-700 appearance-none cursor-pointer">
                     </select>
                 </div>
 
-                <div class="col-span-12 order-last md:order-none md:col-span-7">
+                <div class="col-span-12 md:col-span-6">
                     <div class="relative">
-                        <input type="text" id="search" placeholder="Buscar por nombre o ref..." class="w-full bg-white border border-slate-200 py-2.5 pl-10 pr-4 rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-medium">
-                        <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="text" id="search" placeholder="Buscar por nombre o referencia..." class="w-full bg-white border-2 border-slate-200 py-3.5 pl-12 pr-4 rounded-2xl shadow-sm outline-none focus:ring-4 focus:ring-indigo-100 text-base font-semibold">
+                        <svg class="w-6 h-6 absolute left-4 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                 </div>
 
-                <div class="col-span-3 md:col-span-2">
-                    <div class="bg-white border border-slate-200 py-2 px-3 rounded-xl shadow-sm text-center">
-                        <span id="productCount" class="text-sm font-800 text-indigo-600">-</span>
-                        <span class="text-[8px] font-bold text-slate-400 uppercase ml-1">Items</span>
+                <div class="col-span-12 md:col-span-3 flex gap-3">
+                    <div class="flex-1 bg-white border-2 border-slate-200 py-3 px-4 rounded-2xl shadow-sm flex items-center justify-center gap-2">
+                        <span id="productCount" class="text-xl font-800 text-indigo-600 leading-none">-</span>
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Items</span>
                     </div>
-                </div>
-
-                <div class="col-span-3 md:col-span-1">
-                    <button onclick="downloadExcel()" class="w-full h-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <button onclick="downloadExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 rounded-2xl shadow-lg shadow-emerald-100 transition-all active:scale-95 flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </button>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 py-6">
+    <main class="max-w-6xl mx-auto px-4 py-10">
         
-        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-            <table class="w-full desktop-table text-left">
-                <thead class="bg-slate-50 border-b border-slate-100">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden">
+            <table class="w-full desktop-table text-left border-collapse">
+                <thead class="bg-slate-100/50 border-b-2 border-slate-100">
                     <tr>
-                        <th class="p-4 text-[10px] font-800 text-slate-400 uppercase tracking-widest">Producto</th>
-                        <th class="p-4 text-[10px] font-800 text-slate-400 uppercase tracking-widest">Referencia</th>
-                        <th class="p-4 text-right text-[10px] font-800 text-slate-400 uppercase tracking-widest">Precio</th>
-                        <th class="p-4 text-center text-[10px] font-800 text-slate-400 uppercase tracking-widest">Web</th>
+                        <th class="p-6 text-xs font-800 text-slate-400 uppercase tracking-[0.2em]">Producto</th>
+                        <th class="p-6 text-xs font-800 text-slate-400 uppercase tracking-[0.2em]">Referencia</th>
+                        <th class="p-6 text-right text-xs font-800 text-slate-400 uppercase tracking-[0.2em]">Precio Final</th>
+                        <th class="p-6 text-center text-xs font-800 text-slate-400 uppercase tracking-[0.2em]">Link</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody" class="divide-y divide-slate-50 text-slate-700">
+                <tbody id="tableBody" class="divide-y divide-slate-100">
                     </tbody>
             </table>
 
-            <div id="mobileBody" class="md:hidden px-4 divide-y divide-slate-100">
+            <div id="mobileBody" class="md:hidden px-6 divide-y divide-slate-100">
                 </div>
         </div>
     </main>
@@ -105,19 +101,18 @@
             const selector = document.getElementById('catSelector');
             selector.innerHTML = Object.entries(storeCats[store]).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
             
-            // UI Estilos
             const isEf = store === 'efectoled';
-            document.getElementById('s-efectoled').className = isEf ? 'flex-1 px-5 py-1.5 rounded-lg text-xs font-bold bg-white shadow-sm text-indigo-600' : 'flex-1 px-5 py-1.5 rounded-lg text-xs font-bold text-slate-400';
-            document.getElementById('s-greenice').className = !isEf ? 'flex-1 px-5 py-1.5 rounded-lg text-xs font-bold bg-white shadow-sm text-emerald-600' : 'flex-1 px-5 py-1.5 rounded-lg text-xs font-bold text-slate-400';
+            document.getElementById('s-efectoled').className = isEf ? 'flex-1 px-8 py-3 rounded-xl text-sm font-bold bg-white shadow-md text-indigo-600' : 'flex-1 px-8 py-3 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-700';
+            document.getElementById('s-greenice').className = !isEf ? 'flex-1 px-8 py-3 rounded-xl text-sm font-bold bg-white shadow-md text-emerald-600' : 'flex-1 px-8 py-3 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-700';
             
             loadData();
         }
 
         async function loadData() {
             const cat = document.getElementById('catSelector').value;
-            const loader = `<tr><td colspan="4" class="p-20 text-center"><div class="w-8 h-8 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin mx-auto mb-2"></div><p class="text-slate-400 text-xs font-medium">Sincronizando...</p></td></tr>`;
+            const loader = `<tr><td colspan="4" class="p-32 text-center"><div class="w-12 h-12 border-4 border-indigo-600/10 border-t-indigo-600 rounded-full animate-spin mx-auto mb-6"></div><p class="text-slate-500 text-lg font-semibold italic">Actualizando catálogo...</p></td></tr>`;
             document.getElementById('tableBody').innerHTML = loader;
-            document.getElementById('mobileBody').innerHTML = '<div class="p-10 text-center text-slate-400 text-xs">Cargando...</div>';
+            document.getElementById('mobileBody').innerHTML = '<div class="p-20 text-center text-slate-400 font-bold">Cargando...</div>';
 
             try {
                 const res = await fetch(`/api/scrape?site=${currentStore}&cat=${cat}`);
@@ -125,7 +120,7 @@
                 allProducts = json.data;
                 document.getElementById('productCount').innerText = allProducts.length;
                 render(allProducts);
-            } catch (e) { alert("Error al conectar"); }
+            } catch (e) { console.error(e); }
         }
 
         function render(data) {
@@ -133,30 +128,32 @@
             const mbody = document.getElementById('mobileBody');
             
             tbody.innerHTML = data.map(p => `
-                <tr class="group hover:bg-slate-50 transition-all">
-                    <td class="p-4">
-                        <div class="flex items-center gap-3">
-                            <img src="${p.imagen}" class="w-10 h-10 object-contain bg-white border border-slate-100 rounded-lg p-1" onerror="this.src='https://via.placeholder.com/50'">
-                            <span class="text-xs font-bold text-slate-700 leading-tight max-w-xs">${p.nombre}</span>
+                <tr class="group hover:bg-slate-50/80 transition-all duration-200">
+                    <td class="p-6">
+                        <div class="flex items-center gap-5">
+                            <div class="w-16 h-16 bg-white border-2 border-slate-50 rounded-2xl p-1.5 shadow-sm overflow-hidden flex-shrink-0">
+                                <img src="${p.imagen}" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300" onerror="this.src='https://via.placeholder.com/80?text=LED'">
+                            </div>
+                            <span class="text-base font-bold text-slate-800 leading-tight">${p.nombre}</span>
                         </div>
                     </td>
-                    <td class="p-4"><span class="font-mono text-[9px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded border border-slate-200">#${p.ref}</span></td>
-                    <td class="p-4 text-right font-800 text-slate-900 tracking-tighter text-sm">${p.precio}</td>
-                    <td class="p-4 text-center"><a href="${p.enlace}" target="_blank" class="text-indigo-400 hover:text-indigo-600 inline-block"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></td>
+                    <td class="p-6"><span class="font-mono text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border-2 border-slate-200">#${p.ref}</span></td>
+                    <td class="p-6 text-right font-900 text-slate-900 tracking-tighter text-2xl">${p.precio}</td>
+                    <td class="p-6 text-center"><a href="${p.enlace}" target="_blank" class="text-indigo-500 hover:text-indigo-700 transition-colors inline-block p-2 bg-indigo-50 rounded-lg"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></td>
                 </tr>
             `).join('');
 
             mbody.innerHTML = data.map(p => `
                 <div class="mobile-card">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="font-mono text-[8px] font-bold text-slate-400 uppercase">#${p.ref}</span>
-                        <span class="text-base font-800 text-slate-900">${p.precio}</span>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="font-mono text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-lg">#${p.ref}</span>
+                        <span class="text-2xl font-900 text-slate-900 tracking-tighter">${p.precio}</span>
                     </div>
-                    <div class="flex gap-4">
-                        <img src="${p.imagen}" class="w-16 h-16 bg-white border border-slate-100 rounded-xl p-2 flex-shrink-0">
+                    <div class="flex gap-6">
+                        <img src="${p.imagen}" class="w-24 h-24 bg-white border-2 border-slate-100 rounded-[2rem] p-3 flex-shrink-0 shadow-sm">
                         <div class="flex flex-col justify-between py-1">
-                            <h3 class="text-xs font-bold text-slate-700 leading-snug line-clamp-2">${p.nombre}</h3>
-                            <a href="${p.enlace}" target="_blank" class="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">Ver producto →</a>
+                            <h3 class="text-base font-bold text-slate-800 leading-tight">${p.nombre}</h3>
+                            <a href="${p.enlace}" target="_blank" class="text-xs font-900 text-indigo-600 uppercase tracking-[0.2em] mt-3">Ver producto →</a>
                         </div>
                     </div>
                 </div>
