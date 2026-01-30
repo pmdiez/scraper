@@ -3,10 +3,66 @@ const cheerio = require('cheerio');
 
 const CATALOG = {
     efectoled: {
-        downlights: 'https://www.efectoled.com/es/11-comprar-downlight-led',
-        paneles: 'https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm',
-        ventiladores: 'https://www.efectoled.com/es/888-comprar-ventiladores-de-techo',
-        industrial: 'https://www.efectoled.com/es/55-comprar-iluminacion-led-industrial'
+        // --- ILUMINACIÓN INTERIOR Y TÉCNICA ---
+        downlights: 'https://www.efectoled.com/es/11-comprar-downlight-led', 
+        paneles: 'https://www.efectoled.com/es/8-comprar-paneles-led', 
+        tubos_led: 'https://www.efectoled.com/es/7-comprar-tubos-led', 
+        plafones: 'https://www.efectoled.com/es/73-comprar-plafones-led', 
+        focos_carril: 'https://www.efectoled.com/es/128-comprar-focos-led-carril', 
+        pantallas_led: 'https://www.efectoled.com/es/122-comprar-pantallas-led', 
+        campanas_industriales: 'https://www.efectoled.com/es/81-comprar-campanas-industriales-led', 
+        emergencias: 'https://www.efectoled.com/es/83-comprar-luces-de-emergencia-led', 
+        iluminacion_comercial: 'https://www.efectoled.com/es/93-comprar-iluminacion-led-comercial-para-tiendas', 
+
+        // --- LÁMPARAS POR ESTILO Y ESTANCIA ---
+        lamparas: 'https://www.efectoled.com/es/18947-comprar-lamparas', 
+        lamparas_techo: 'https://www.efectoled.com/es/1272-comprar-lamparas-de-techo', 
+        lamparas_mesa: 'https://www.efectoled.com/es/845-comprar-lamparas-de-mesa', 
+        lamparas_pie: 'https://www.efectoled.com/es/846-comprar-lamparas-de-pie', 
+        lamparas_pared: 'https://www.efectoled.com/es/11307-comprar-lamparas-de-pared', 
+        lamparas_nordicas: 'https://www.efectoled.com/es/11164-comprar-lamparas-estilo-nordico', 
+        lamparas_vintage: 'https://www.efectoled.com/es/936-comprar-lamparas-vintage', 
+        lamparas_modernas: 'https://www.efectoled.com/es/11176-comprar-lamparas-modernas', 
+        lamparas_naturales: 'https://www.efectoled.com/es/11677-comprar-lamparas-de-estilo-natural', 
+        lamparas_dormitorio: 'https://www.efectoled.com/es/841-comprar-lamparas-de-dormitorio', 
+        lamparas_cocina: 'https://www.efectoled.com/es/833-comprar-lamparas-de-cocinas', 
+        lamparas_bano: 'https://www.efectoled.com/es/834-comprar-lamparas-de-bano', 
+
+        // --- EXTERIOR Y SOLAR ---
+        exterior: 'https://www.efectoled.com/es/11474-comprar-lamparas-de-exterior', 
+        proyectores_led: 'https://www.efectoled.com/es/9-comprar-proyectores-led-exterior', 
+        iluminacion_solar: 'https://www.efectoled.com/es/802-comprar-iluminacion-solar-led', 
+        jardin_piscinas: 'https://www.efectoled.com/es/13-comprar-piscinas-jardines-y-solar-led', 
+        balizas_exterior: 'https://www.efectoled.com/es/85-comprar-balizas-led-exterior', 
+        alumbrado_publico: 'https://www.efectoled.com/es/47-comprar-alumbrado-publico-led', 
+
+        // --- TIRAS LED Y SMART HOME ---
+        tiras_led: 'https://www.efectoled.com/es/10-comprar-tiras-led', 
+        tiras_led_12v: 'https://www.efectoled.com/es/63-comprar-tiras-led-12v-dc', 
+        tiras_led_220v: 'https://www.efectoled.com/es/56-comprar-tiras-led-220v-240v-ac', 
+        tiras_rgb: 'https://www.efectoled.com/es/25-comprar-tiras-led-rgb-rgbw', 
+        domotica: 'https://www.efectoled.com/es/703-comprar-domotica-y-smarthome', 
+        control_wifi: 'https://www.efectoled.com/es/1024-comprar-control-wifi', 
+
+        // --- BOMBILLAS ---
+        bombillas_led: 'https://www.efectoled.com/es/6-comprar-bombillas-led', 
+        bombillas_e27: 'https://www.efectoled.com/es/16-comprar-bombillas-led-e27', 
+        bombillas_gu10: 'https://www.efectoled.com/es/17-comprar-bombillas-led-gu10', 
+        bombillas_e14: 'https://www.efectoled.com/es/41-comprar-bombillas-led-e14', 
+        bombillas_smart: 'https://www.efectoled.com/es/7126-comprar-bombillas-led-smart', 
+
+        // --- MATERIAL ELÉCTRICO ---
+        mecanismos: 'https://www.efectoled.com/es/5298-comprar-mecanismos-electricos-empotrables', 
+        cables: 'https://www.efectoled.com/es/3283-comprar-cables-electricos', 
+        cuadros_electricos: 'https://www.efectoled.com/es/96-comprar-cuadros-electricos', 
+        componentes: 'https://www.efectoled.com/es/87-comprar-componentes-electricos', 
+        solar_fotovoltaica: 'https://www.efectoled.com/es/1030-comprar-equipos-y-sistemas-de-energia-solar-fotovoltaica', 
+
+        // --- OTROS Y CLIMATIZACIÓN ---
+        ventiladores: 'https://www.efectoled.com/es/888-comprar-ventiladores-de-techo', 
+        herramientas: 'https://www.efectoled.com/es/1356-comprar-herramientas-profesionales-para-electricistas', 
+        outlet: 'https://www.efectoled.com/es/6793-comprar-outled', 
+        navidad: 'https://www.efectoled.com/es/164-comprar-luces-de-navidad' 
     },
     greenice: {
         tiras: 'https://greenice.com/collections/tiras-led-770',
@@ -114,7 +170,6 @@ async function fetchEfectoPage(url) {
 }
 
 async function handleGreenIce(res, baseUrl) {
-    // Shopify JSON endpoint
     const jsonUrl = `${baseUrl}/products.json?limit=250`;
     const { data } = await axios.get(jsonUrl);
     const products = data.products.map(p => ({
