@@ -2,7 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
-    const baseUrl = 'https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm';
+    const baseUrl = 'https://www.efectoled.com/es/11-comprar-downlight-led';
     const allProducts = [];
     
     try {
@@ -99,3 +99,4 @@ async function fetchPage(url) {
 
     return { products, $ };
 }
+
