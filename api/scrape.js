@@ -6,13 +6,13 @@ const CATALOG = {
         downlights: 'https://www.efectoled.com/es/11-comprar-downlight-led',
         paneles: 'https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm',
         ventiladores: 'https://www.efectoled.com/es/888-comprar-ventiladores-de-techo',
-        industrial: 'https://www.efectoled.com/es/12-comprar-iluminacion-led-industrial'
+        industrial: 'https://www.efectoled.com/es/55-comprar-iluminacion-led-industrial'
     },
     greenice: {
         tiras: 'https://greenice.com/collections/tiras-led-770',
-        paneles: 'https://greenice.com/collections/paneles-led-744',
-        vivienda: 'https://greenice.com/collections/iluminacion-vivienda-745',
-        industrial: 'https://greenice.com/collections/iluminacion-industrial-led-751'
+        paneles: 'https://greenice.com/collections/paneles-led-420',
+        focos_proyectores: 'https://greenice.com/collections/focos-proyectores-led-para-exterior-663',
+        profesional: 'https://greenice.com/collections/iluminacion-led-profesional-362'
     }
 };
 
@@ -96,3 +96,4 @@ async function handleEfectoLED(res, url) {
     const unique = Array.from(new Map(allProducts.filter(p => p.ref !== "N/A").map(p => [p.ref, p])).values());
     res.status(200).json({ success: true, data: unique });
 }
+
