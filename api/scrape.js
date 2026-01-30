@@ -2,72 +2,31 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
+    // URL base sin el número de página
     const baseUrl = 'https://www.efectoled.com/es/11-comprar-downlight-led';
+    const totalPagesToScan = 20; // Forzamos el escaneo de 20 páginas
     const allProducts = [];
-    
+
     try {
-        // 1. PRIMERA PETICIÓN
-        const firstPageData = await fetchPage(`${baseUrl}?page=1`);
-        allProducts.push(...firstPageData.products);
+        // Creamos un array de promesas para todas las páginas del 1 al 20
+        const promises = [];
+        for (let i = 1; i <= totalPagesToScan; i++) {
+            promises.push(fetchPage(`${baseUrl}?page=${i}`));
+        }
 
-        const $ = firstPageData.$;
-        let totalPages = 1;
-
-        // 2. DETECTOR DE PÁGINAS MEJORADO
-        // Buscamos en cualquier enlace dentro de la paginación que tenga "page="
-        $('.pagination a, .page-list a').each((i, el) => {
-            const href = $(el).attr('href');
-            const text = $(el).text().trim();
-            
-            // Intento A: Extraer número del atributo href
-            if (href && href.includes('page=')) {
-                const match = href.match(/page=(\d+)/);
-                if (match) {
-                    const p = parseInt(match[1]);
-                    if (p > totalPages) totalPages = p;
-                }
-            }
-            
-            // Intento B: Extraer número del texto del enlace (por si es el botón "17")
-            const numText = parseInt(text);
-            if (!isNaN(numText) && numText > totalPages) {
-                totalPages = numText;
+        // Ejecutamos todas las peticiones en paralelo
+        const results = await Promise.all(resultsToData(promises));
+        
+        results.forEach(products => {
+            if (products && products.length > 0) {
+                allProducts.push(...products);
             }
         });
-
-        // 3. SEGURO POR SI FALLA LA PAGINACIÓN (Cálculo por total de productos)
-        // EfectoLED suele decir "Hay X productos"
-        if (totalPages === 1) {
-            const totalText = $('.total-products, .products-nb-per-page').text();
-            const totalMatch = totalText.match(/(\d+)/);
-            if (totalMatch) {
-                const totalItems = parseInt(totalMatch[1]);
-                // PrestaShop suele mostrar 20 o 24 productos por página
-                const itemsPerPage = 24; 
-                totalPages = Math.ceil(totalItems / itemsPerPage);
-            }
-        }
-
-        // 4. BUCLE DE PÁGINAS (Con límite de seguridad)
-        if (totalPages > 1) {
-            const promises = [];
-            // Limitamos a 20 para no saturar Vercel (Hobby limit)
-            const limit = Math.min(totalPages, 20); 
-            
-            for (let i = 2; i <= limit; i++) {
-                promises.push(fetchPage(`${baseUrl}?page=${i}`));
-            }
-
-            const results = await Promise.all(promises);
-            results.forEach(result => {
-                allProducts.push(...result.products);
-            });
-        }
 
         res.status(200).json({
             success: true,
             total: allProducts.length,
-            pages: totalPages,
+            pagesScanned: totalPagesToScan,
             data: allProducts
         });
 
@@ -76,56 +35,67 @@ export default async function handler(req, res) {
     }
 }
 
+// Función para manejar las promesas y evitar que una página rota detenga todo
+function resultsToData(promises) {
+    return promises.map(p => p.catch(() => [])); 
+}
+
 async function fetchPage(url) {
-    // Añadimos un pequeño delay aleatorio para no ser detectados como bot agresivo
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
-
-    const { data } = await axios.get(url, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Accept-Language': 'es-ES,es;q=0.9'
-        }
-    });
-
-    const $ = cheerio.load(data);
-    const products = [];
-
-    // Lógica de extracción (JSON-LD)
-    $('script[type="application/ld+json"]').each((i, el) => {
-        try {
-            const json = JSON.parse($(el).html());
-            const items = json.itemListElement || (json['@type'] === 'ItemList' ? json.itemListElement : null);
-            
-            if (items) {
-                items.forEach(item => {
-                    const p = item.item || item;
-                    if (p.name) {
-                        products.push({
-                            ref: p.sku || p.mpn || (p.url ? p.url.split('/').pop().split('-')[0] : "N/A"),
-                            nombre: p.name,
-                            precio: p.offers ? `${p.offers.price || p.offers.offers[0].price} €` : "Ver web",
-                            imagen: p.image || "",
-                            enlace: p.url || url
-                        });
-                    }
-                });
-            }
-        } catch (e) { }
-    });
-
-    // Fallback Manual (Si el JSON-LD viene vacío en páginas profundas)
-    if (products.length === 0) {
-        $('.product-miniature').each((i, el) => {
-            const $el = $(el);
-            products.push({
-                ref: $el.attr('data-id-product') || "N/A",
-                nombre: $el.find('.product-title').text().trim(),
-                precio: $el.find('.price').text().trim(),
-                imagen: $el.find('img').attr('data-src') || $el.find('img').attr('src'),
-                enlace: $el.find('a').attr('href')
-            });
+    try {
+        const { data } = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+            },
+            timeout: 10000 // 10 segundos por página
         });
-    }
 
-    return { products, $ };
+        const $ = cheerio.load(data);
+        const products = [];
+
+        // Estrategia 1: JSON-LD (Datos estructurados)
+        $('script[type="application/ld+json"]').each((i, el) => {
+            try {
+                const json = JSON.parse($(el).html());
+                const items = json.itemListElement || (json['@type'] === 'ItemList' ? json.itemListElement : null);
+                
+                if (items) {
+                    items.forEach(item => {
+                        const p = item.item || item;
+                        if (p.name) {
+                            products.push({
+                                ref: p.sku || p.mpn || (p.url ? p.url.split('/').pop().split('-')[0] : "N/A"),
+                                nombre: p.name,
+                                precio: p.offers ? `${p.offers.price || p.offers.offers[0].price} €` : "Ver web",
+                                imagen: p.image || "",
+                                enlace: p.url || url
+                            });
+                        }
+                    });
+                }
+            } catch (e) {}
+        });
+
+        // Estrategia 2: Fallback Manual (Si la página no tiene JSON-LD o está vacío)
+        if (products.length === 0) {
+            $('.product-miniature').each((i, el) => {
+                const $el = $(el);
+                const nombre = $el.find('.product-title').text().trim();
+                if (nombre) {
+                    const textoTarjeta = $el.text();
+                    const matchRef = textoTarjeta.match(/Ref\s*(\d+)/i);
+                    products.push({
+                        ref: matchRef ? matchRef[1] : ($el.attr('data-id-product') || "N/A"),
+                        nombre: nombre,
+                        precio: $el.find('.price').text().trim(),
+                        imagen: $el.find('img').attr('data-src') || $el.find('img').attr('src'),
+                        enlace: $el.find('a').attr('href')
+                    });
+                }
+            });
+        }
+
+        return products;
+    } catch (error) {
+        return []; // Si la página no existe (ej. pág 18 de 17), devolvemos array vacío
+    }
 }
