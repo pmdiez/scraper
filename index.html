@@ -7,71 +7,73 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* Estilos para forzar el comportamiento de tarjeta en móviles */
+        /* Diseño responsivo para tablas en móvil */
         @media (max-width: 768px) {
             .mobile-stack thead { display: none; }
             .mobile-stack tr { 
-                display: flex; 
-                flex-direction: column; 
-                margin-bottom: 1rem; 
+                display: block; 
+                margin-bottom: 1.5rem; 
                 border: 1px solid #e5e7eb;
                 border-radius: 1rem;
-                padding: 1rem;
                 background: white;
+                padding: 1rem;
+                shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             }
             .mobile-stack td { 
                 display: flex; 
-                justify-content:间-between; 
-                padding: 0.5rem 0;
-                border: none !important;
+                justify-content: space-between; 
+                align-items: center;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid #f3f4f6;
             }
+            .mobile-stack td:last-child { border: none; }
             .mobile-stack td::before {
                 content: attr(data-label);
                 font-weight: 700;
-                color: #9ca3af;
-                font-size: 0.75rem;
+                color: #6b7280;
+                font-size: 0.7rem;
                 text-transform: uppercase;
             }
+            .mobile-stack .product-cell { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <div class="max-w-6xl mx-auto px-4 py-6 md:py-10">
+    <div class="max-w-6xl mx-auto px-4 py-6">
         
-        <div class="flex flex-col gap-6 mb-8">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tighter">Monitor de Precios PRO</h1>
-                    <p id="productCount" class="text-blue-600 text-sm font-bold italic">Cargando catálogo...</p>
-                </div>
-                
-                <div class="flex w-full md:w-auto gap-2">
-                    <button onclick="exportToExcel()" id="exportBtn" class="hidden flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        <span>Excel</span>
-                    </button>
-                    <div id="status" class="flex-1 md:flex-none bg-white px-4 py-2 rounded-xl border shadow-sm text-xs md:text-sm font-bold flex items-center justify-center">
-                        ⏳ Cargando...
-                    </div>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-gray-900 tracking-tight">EfectoLED Monitor</h1>
+                <p id="productCount" class="text-blue-600 font-bold text-sm">🔄 Cargando catálogo completo...</p>
+            </div>
+            
+            <div class="flex w-full md:w-auto gap-3">
+                <button onclick="exportToExcel()" id="exportBtn" class="hidden flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg">
+                    Descargar Excel
+                </button>
+                <div id="status" class="flex-1 bg-white px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold flex items-center justify-center shadow-sm">
+                    ⏳ CONECTANDO...
                 </div>
             </div>
-
-            <input type="text" id="searchInput" placeholder="Buscar por nombre o referencia..." 
-                class="w-full p-4 rounded-2xl shadow-sm border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
         </div>
 
-        [Image of responsive table design patterns mobile vs desktop]
-        <div class="bg-transparent md:bg-white md:rounded-2xl md:shadow-xl md:overflow-hidden md:border md:border-gray-200">
+        <div class="relative mb-8">
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o referencia..." 
+                class="w-full p-5 rounded-2xl shadow-sm border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500 text-lg transition-all">
+        </div>
+
+        <div class="overflow-hidden md:bg-white md:rounded-3xl md:shadow-xl md:border md:border-gray-100">
             <table class="w-full mobile-stack">
-                <thead class="bg-gray-800 text-white hidden md:table-header-group">
+                <thead class="bg-gray-900 text-white hidden md:table-header-group">
                     <tr>
-                        <th class="p-4 text-xs uppercase font-black">Ref</th>
-                        <th class="p-4 text-xs uppercase font-black">Producto</th>
-                        <th class="p-4 text-xs uppercase font-black text-right">Precio</th>
-                        <th class="p-4 text-xs uppercase font-black text-center">Acción</th>
+                        <th class="p-5 text-xs font-black uppercase tracking-widest">Ref</th>
+                        <th class="p-5 text-xs font-black uppercase tracking-widest">Producto</th>
+                        <th class="p-5 text-xs font-black uppercase tracking-widest text-right">Precio</th>
+                        <th class="p-5 text-xs font-black uppercase tracking-widest text-center">Acción</th>
                     </tr>
                 </thead>
-                <tbody id="productTable" class="md:divide-y md:divide-gray-100"></tbody>
+                <tbody id="productTable" class="md:divide-y md:divide-gray-100">
+                    </tbody>
             </table>
         </div>
     </div>
@@ -83,38 +85,73 @@
             try {
                 const res = await fetch('/api/scrape');
                 const json = await res.json();
+                
                 if (json.success) {
                     allProducts = json.data;
                     render(allProducts);
                     document.getElementById('status').innerText = '✅ ACTUALIZADO';
-                    document.getElementById('productCount').innerText = `📦 ${allProducts.length} productos (20 págs)`;
+                    document.getElementById('productCount').innerText = `📦 ${allProducts.length} productos listados (20 páginas)`;
                     document.getElementById('exportBtn').classList.remove('hidden');
+                } else {
+                    document.getElementById('status').innerText = '❌ ERROR API';
                 }
             } catch (e) {
-                document.getElementById('status').innerText = '❌ ERROR';
+                document.getElementById('status').innerText = '❌ ERROR RED';
             }
         }
 
         function render(data) {
             const tbody = document.getElementById('productTable');
             if (data.length === 0) {
-                tbody.innerHTML = '<div class="p-10 text-center text-gray-500">No se encontraron productos</div>';
+                tbody.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-gray-500 font-bold">No se encontraron productos</td></tr>';
                 return;
             }
 
             tbody.innerHTML = data.map(p => `
-                <tr class="hover:bg-blue-50/30 transition-colors">
-                    <td class="p-4" data-label="Ref">
-                        <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] md:text-xs font-bold font-mono border border-blue-100 italic">#${p.ref}</span>
+                <tr class="hover:bg-blue-50/40 transition-colors">
+                    <td class="p-4 md:p-5" data-label="Referencia">
+                        <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold font-mono border border-blue-100 italic">#${p.ref}</span>
                     </td>
-                    <td class="p-4" data-label="Producto">
-                        <div class="flex items-center gap-3 w-full">
-                            <img src="${p.imagen}" class="w-12 h-12 md:w-10 md:h-10 object-contain border bg-white rounded-lg flex-shrink-0" onerror="this.src='https://via.placeholder.com/50'">
-                            <span class="text-sm font-semibold text-gray-800 line-clamp-2">${p.nombre}</span>
+                    <td class="p-4 md:p-5" data-label="Producto">
+                        <div class="flex items-center gap-4 text-left w-full">
+                            <img src="${p.imagen}" class="w-12 h-12 object-contain border bg-white rounded-xl shadow-sm flex-shrink-0" onerror="this.src='https://via.placeholder.com/60?text=LED'">
+                            <span class="text-sm font-bold text-gray-800 leading-tight">${p.nombre}</span>
                         </div>
                     </td>
-                    <td class="p-4 text-right" data-label="Precio">
-                        <span class="text-xl md:text-lg font-black text-green-600">${p.precio}</span>
+                    <td class="p-4 md:p-5 text-right" data-label="Precio">
+                        <span class="text-xl md:text-lg font-black text-emerald-600">${p.precio}</span>
                     </td>
-                    <td class="p-4 text-center" data-label="Acceso">
-                        <a href="${p.enlace}" target="_blank" class="w-full md:w
+                    <td class="p-4 md:p-5 text-center" data-label="Acción">
+                        <a href="${p.enlace}" target="_blank" class="w-full md:w-auto block md:inline-block bg-gray-900 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-blue-600 transition-all text-center">WEB</a>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function exportToExcel() {
+            if (allProducts.length === 0) return;
+            const dataToExport = allProducts.map(p => ({
+                'REF': p.ref,
+                'PRODUCTO': p.nombre,
+                'PRECIO': p.precio,
+                'URL': p.enlace
+            }));
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Catálogo");
+            XLSX.writeFile(wb, `EfectoLED_Export.xlsx`);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase().trim();
+            const filtered = allProducts.filter(p => 
+                p.nombre.toLowerCase().includes(val) || 
+                String(p.ref).toLowerCase().includes(val)
+            );
+            render(filtered);
+        });
+
+        loadData();
+    </script>
+</body>
+</html>
