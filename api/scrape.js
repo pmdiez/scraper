@@ -16,12 +16,25 @@ const CATALOG = {
     }
 };
 
+// Función mágica para crear la "Llave de Equivalencia"
+function extractTechSpecs(name) {
+    const watts = name.match(/(\d+)W/i)?.[1] || "";
+    const color = name.match(/(\d{4}K)/i)?.[1] || "";
+    const dims = name.match(/(\d+x\d+)/i)?.[1] || name.match(/(\d+)mm/i)?.[1] || "";
+    
+    // Si no encuentra nada, devuelve el nombre original para no romper
+    if (!watts && !color && !dims) return "GENERIC";
+    return `${watts}W|${dims}|${color}`.toUpperCase();
+}
+
 export default async function handler(req, res) {
     const { site, cat } = req.query;
     
-    // Validación de entrada
-    if (!CATALOG[site] || !CATALOG[site][cat]) {
-        return res.status(400).json({ success: false, message: "Categoría no válida" });
+    if (!site || !cat || !CATALOG[site] || !CATALOG[site][cat]) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "Categoría no válida. Uso: ?site=efectoled&cat=downlights" 
+        });
     }
 
     const targetUrl = CATALOG[site][cat];
@@ -38,24 +51,27 @@ export default async function handler(req, res) {
 }
 
 async function handleGreenIce(res, url) {
-    // Shopify permite obtener el JSON añadiendo /products.json
     const jsonUrl = `${url}/products.json?limit=250`;
     const { data } = await axios.get(jsonUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     
-    const products = data.products.map(p => ({
-        ref: p.variants[0].sku || "S/R",
-        nombre: p.title,
-        precio: `${p.variants[0].price} €`,
-        imagen: p.images[0]?.src || "",
-        enlace: `https://greenice.com/products/${p.handle}`
-    })).filter(p => p.ref !== "S/R");
+    const products = data.products.map(p => {
+        const nombre = p.title;
+        return {
+            ref: p.variants[0].sku || "S/R",
+            nombre: nombre,
+            precio: `${p.variants[0].price} €`,
+            imagen: p.images[0]?.src || "",
+            enlace: `https://greenice.com/products/${p.handle}`,
+            equivKey: extractTechSpecs(nombre) // Inyectamos la llave
+        };
+    }).filter(p => p.ref !== "S/R");
 
     res.status(200).json({ success: true, data: products });
 }
 
 async function handleEfectoLED(res, url) {
     const allProducts = [];
-    const pages = 12; // Ajustamos a 12 para balancear velocidad/cantidad
+    const pages = 12;
 
     const promises = [];
     for (let i = 1; i <= pages; i++) {
@@ -70,7 +86,6 @@ async function handleEfectoLED(res, url) {
         if (!html) return;
         const $ = cheerio.load(html);
         
-        // Lógica JSON-LD del rollback exitoso
         $('script[type="application/ld+json"]').each((_, el) => {
             try {
                 const json = JSON.parse($(el).html());
@@ -84,7 +99,8 @@ async function handleEfectoLED(res, url) {
                                 nombre: p.name,
                                 precio: p.offers ? `${p.offers.price || p.offers.offers[0].price} €` : "Ver web",
                                 imagen: p.image || "",
-                                enlace: p.url
+                                enlace: p.url,
+                                equivKey: extractTechSpecs(p.name) // Inyectamos la llave
                             });
                         }
                     });
@@ -96,4 +112,3 @@ async function handleEfectoLED(res, url) {
     const unique = Array.from(new Map(allProducts.filter(p => p.ref !== "N/A").map(p => [p.ref, p])).values());
     res.status(200).json({ success: true, data: unique });
 }
-
