@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
     // URL base sin el número de página
-    const baseUrl = 'https://www.efectoled.com/es/7-comprar-tubos-led';
+    const baseUrl = 'https://www.efectoled.com/es/content/328-iluminacion-interior';
     const totalPagesToScan = 50; // Forzamos el escaneo de 50 páginas
     const allProducts = [];
 
@@ -99,6 +99,7 @@ async function fetchPage(url) {
         return []; // Si la página no existe (ej. pág 18 de 17), devolvemos array vacío
     }
 }
+
 
 
 
