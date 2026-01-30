@@ -6,49 +6,73 @@
     <title>Monitor PRO - EfectoLED</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Estilos para forzar el comportamiento de tarjeta en móviles */
+        @media (max-width: 768px) {
+            .mobile-stack thead { display: none; }
+            .mobile-stack tr { 
+                display: flex; 
+                flex-direction: column; 
+                margin-bottom: 1rem; 
+                border: 1px solid #e5e7eb;
+                border-radius: 1rem;
+                padding: 1rem;
+                background: white;
+            }
+            .mobile-stack td { 
+                display: flex; 
+                justify-content:间-between; 
+                padding: 0.5rem 0;
+                border: none !important;
+            }
+            .mobile-stack td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: #9ca3af;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="max-w-6xl mx-auto py-10 px-4">
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-6 md:py-10">
         
-        <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
-            <div>
-                <h1 class="text-3xl font-black text-gray-900 tracking-tighter">Monitor de Precios PRO</h1>
-                <p id="productCount" class="text-blue-600 font-bold italic">Iniciando escaneo de 20 páginas...</p>
-            </div>
-            
-            <div class="flex gap-2">
-                <button onclick="exportToExcel()" id="exportBtn" class="hidden bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Descargar Excel
-                </button>
+        <div class="flex flex-col gap-6 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tighter">Monitor de Precios PRO</h1>
+                    <p id="productCount" class="text-blue-600 text-sm font-bold italic">Cargando catálogo...</p>
+                </div>
                 
-                <div id="status" class="bg-white px-4 py-2 rounded-lg border shadow-sm text-sm font-bold">
-                    ⏳ Procesando...
+                <div class="flex w-full md:w-auto gap-2">
+                    <button onclick="exportToExcel()" id="exportBtn" class="hidden flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <span>Excel</span>
+                    </button>
+                    <div id="status" class="flex-1 md:flex-none bg-white px-4 py-2 rounded-xl border shadow-sm text-xs md:text-sm font-bold flex items-center justify-center">
+                        ⏳ Cargando...
+                    </div>
                 </div>
             </div>
+
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o referencia..." 
+                class="w-full p-4 rounded-2xl shadow-sm border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
         </div>
 
-        <input type="text" id="searchInput" placeholder="Filtrar por nombre o referencia..." 
-            class="w-full p-4 rounded-xl shadow-lg mb-6 outline-none focus:ring-2 focus:ring-blue-500 border-none">
-
-        
-
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-800 text-white">
-                        <tr>
-                            <th class="p-4 text-xs uppercase font-black">Ref</th>
-                            <th class="p-4 text-xs uppercase font-black">Producto</th>
-                            <th class="p-4 text-xs uppercase font-black text-right">Precio</th>
-                            <th class="p-4 text-xs uppercase font-black text-center">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productTable" class="divide-y divide-gray-100"></tbody>
-                </table>
-            </div>
+        [Image of responsive table design patterns mobile vs desktop]
+        <div class="bg-transparent md:bg-white md:rounded-2xl md:shadow-xl md:overflow-hidden md:border md:border-gray-200">
+            <table class="w-full mobile-stack">
+                <thead class="bg-gray-800 text-white hidden md:table-header-group">
+                    <tr>
+                        <th class="p-4 text-xs uppercase font-black">Ref</th>
+                        <th class="p-4 text-xs uppercase font-black">Producto</th>
+                        <th class="p-4 text-xs uppercase font-black text-right">Precio</th>
+                        <th class="p-4 text-xs uppercase font-black text-center">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="productTable" class="md:divide-y md:divide-gray-100"></tbody>
+            </table>
         </div>
     </div>
 
@@ -62,11 +86,8 @@
                 if (json.success) {
                     allProducts = json.data;
                     render(allProducts);
-                    
-                    document.getElementById('status').innerText = '✅ LISTO';
-                    document.getElementById('productCount').innerText = `📦 ${allProducts.length} productos cargados (20 páginas)`;
-                    
-                    // Mostrar botón de Excel al terminar la carga
+                    document.getElementById('status').innerText = '✅ ACTUALIZADO';
+                    document.getElementById('productCount').innerText = `📦 ${allProducts.length} productos (20 págs)`;
                     document.getElementById('exportBtn').classList.remove('hidden');
                 }
             } catch (e) {
@@ -74,60 +95,26 @@
             }
         }
 
-        // Función para Exportar a Excel
-        function exportToExcel() {
-            if (allProducts.length === 0) return;
-
-            // Preparamos los datos para que el Excel sea legible (limpiamos columnas)
-            const dataToExport = allProducts.map(p => ({
-                'REFERENCIA': p.ref,
-                'NOMBRE PRODUCTO': p.nombre,
-                'PRECIO': p.precio,
-                'LINK WEB': p.enlace
-            }));
-
-            // Creamos el libro de Excel
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Precios_EfectoLED");
-
-            // Ajuste básico de ancho de columnas
-            worksheet['!cols'] = [{ wch: 15 }, { wch: 60 }, { wch: 15 }, { wch: 50 }];
-
-            // Descargar el archivo
-            const fecha = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(workbook, `EfectoLED_Precios_${fecha}.xlsx`);
-        }
-
         function render(data) {
             const tbody = document.getElementById('productTable');
+            if (data.length === 0) {
+                tbody.innerHTML = '<div class="p-10 text-center text-gray-500">No se encontraron productos</div>';
+                return;
+            }
+
             tbody.innerHTML = data.map(p => `
                 <tr class="hover:bg-blue-50/30 transition-colors">
-                    <td class="p-4 font-mono text-xs font-bold text-blue-600">#${p.ref}</td>
-                    <td class="p-4">
-                        <div class="flex items-center gap-3">
-                            <img src="${p.imagen}" class="w-10 h-10 object-contain border bg-white rounded shadow-sm" onerror="this.src='https://via.placeholder.com/50'">
-                            <span class="text-sm font-medium text-gray-700">${p.nombre}</span>
+                    <td class="p-4" data-label="Ref">
+                        <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] md:text-xs font-bold font-mono border border-blue-100 italic">#${p.ref}</span>
+                    </td>
+                    <td class="p-4" data-label="Producto">
+                        <div class="flex items-center gap-3 w-full">
+                            <img src="${p.imagen}" class="w-12 h-12 md:w-10 md:h-10 object-contain border bg-white rounded-lg flex-shrink-0" onerror="this.src='https://via.placeholder.com/50'">
+                            <span class="text-sm font-semibold text-gray-800 line-clamp-2">${p.nombre}</span>
                         </div>
                     </td>
-                    <td class="p-4 text-right font-black text-green-600 text-lg">${p.precio}</td>
-                    <td class="p-4 text-center">
-                        <a href="${p.enlace}" target="_blank" class="bg-gray-800 text-white px-3 py-1.5 rounded-md text-[10px] font-bold hover:bg-blue-600 transition-all">WEB</a>
+                    <td class="p-4 text-right" data-label="Precio">
+                        <span class="text-xl md:text-lg font-black text-green-600">${p.precio}</span>
                     </td>
-                </tr>
-            `).join('');
-        }
-
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase().trim();
-            const filtered = allProducts.filter(p => 
-                p.nombre.toLowerCase().includes(val) || 
-                String(p.ref).toLowerCase().includes(val)
-            );
-            render(filtered);
-        });
-
-        loadData();
-    </script>
-</body>
-</html>
+                    <td class="p-4 text-center" data-label="Acceso">
+                        <a href="${p.enlace}" target="_blank" class="w-full md:w
