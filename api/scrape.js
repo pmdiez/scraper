@@ -3,17 +3,10 @@ const cheerio = require('cheerio');
 
 const CATALOG = {
     efectoled: {
-        // --- ILUMINACIÓN INTERIOR Y TÉCNICA ---
-        downlights: 'https://www.efectoled.com/es/11-comprar-downlight-led', [cite: 1]
-        paneles: 'https://www.efectoled.com/es/8-comprar-paneles-led', [cite: 1]
-        tubos_led: 'https://www.efectoled.com/es/7-comprar-tubos-led', [cite: 1]
-        plafones: 'https://www.efectoled.com/es/73-comprar-plafones-led', [cite: 1]
-        focos_carril: 'https://www.efectoled.com/es/128-comprar-focos-led-carril', [cite: 1]
-        pantallas_led: 'https://www.efectoled.com/es/122-comprar-pantallas-led', [cite: 1]
-        campanas_industriales: 'https://www.efectoled.com/es/81-comprar-campanas-industriales-led', [cite: 1]
-        emergencias: 'https://www.efectoled.com/es/83-comprar-luces-de-emergencia-led', [cite: 1]
-        iluminacion_comercial: 'https://www.efectoled.com/es/93-comprar-iluminacion-led-comercial-para-tiendas', [cite: 1]
-
+        downlights: 'https://www.efectoled.com/es/11-comprar-downlight-led',
+        paneles: 'https://www.efectoled.com/es/11577-comprar-paneles-led-60x60cm',
+        ventiladores: 'https://www.efectoled.com/es/888-comprar-ventiladores-de-techo',
+        industrial: 'https://www.efectoled.com/es/55-comprar-iluminacion-led-industrial'
     },
     greenice: {
         tiras: 'https://greenice.com/collections/tiras-led-770',
@@ -121,6 +114,7 @@ async function fetchEfectoPage(url) {
 }
 
 async function handleGreenIce(res, baseUrl) {
+    // Shopify JSON endpoint
     const jsonUrl = `${baseUrl}/products.json?limit=250`;
     const { data } = await axios.get(jsonUrl);
     const products = data.products.map(p => ({
@@ -132,4 +126,3 @@ async function handleGreenIce(res, baseUrl) {
     }));
     res.status(200).json({ success: true, total: products.length, data: products });
 }
-
