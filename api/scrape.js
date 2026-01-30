@@ -1,44 +1,71 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
 
 export default async function handler(req, res) {
-    // URL de la colección + el "truco" .json
-    const baseUrl = 'https://greenice.com/collections/tiras-led-770/products.json';
-    const allProducts = [];
+    const site = req.query.site || 'efectoled'; // Por defecto efectoled
     
+    if (site === 'greenice') {
+        return await handleGreenIce(res);
+    } else {
+        return await handleEfectoLED(res);
+    }
+}
+
+// --- MOTOR GREENICE (Shopify JSON) ---
+async function handleGreenIce(res) {
+    const baseUrl = 'https://greenice.com/collections/tiras-led-770/products.json';
     try {
-        // Shopify permite hasta 250 productos por petición con limit=250
-        // Vamos a pedir 2 páginas (500 productos en total), que suele ser más que suficiente
-        for (let i = 1; i <= 2; i++) {
-            const { data } = await axios.get(`${baseUrl}?limit=250&page=${i}`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
-                }
-            });
+        const { data } = await axios.get(`${baseUrl}?limit=250`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        
+        const products = data.products.map(p => ({
+            ref: p.variants[0].sku || "S/R",
+            nombre: p.title,
+            precio: `${p.variants[0].price} €`,
+            imagen: p.images[0]?.src || "",
+            enlace: `https://greenice.com/products/${p.handle}`
+        })).filter(p => p.ref !== "S/R");
 
-            if (!data.products || data.products.length === 0) break;
+        res.status(200).json({ success: true, total: products.length, pages: 1, data: products });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+}
 
-            data.products.forEach(p => {
-                // Shopify guarda la información en variantes
-                const variant = p.variants[0]; 
-                
-                allProducts.push({
-                    ref: variant.sku || "S/R", // La referencia es el SKU en Shopify
-                    nombre: p.title,
-                    precio: `${variant.price} €`,
-                    imagen: p.images[0]?.src || "",
-                    enlace: `https://greenice.com/products/${p.handle}`
-                });
-            });
+// --- MOTOR EFECTOLED (PrestaShop Scraping) ---
+async function handleEfectoLED(res) {
+    const baseUrl = 'https://www.efectoled.com/es/11-comprar-downlight-led';
+    const allProducts = [];
+    try {
+        const promises = [];
+        for (let i = 1; i <= 20; i++) {
+            promises.push(axios.get(`${baseUrl}?page=${i}`, {
+                headers: { 'User-Agent': 'Mozilla/5.0' },
+                timeout: 10000
+            }).then(r => r.data).catch(() => null));
         }
 
-        res.status(200).json({
-            success: true,
-            total: allProducts.length,
-            pages: 2, // Con limit=250, barremos casi todo en 1 o 2 páginas
-            data: allProducts
+        const pages = await Promise.all(promises);
+        pages.forEach(html => {
+            if (!html) return;
+            const $ = cheerio.load(html);
+            $('.product-miniature').each((i, el) => {
+                const $el = $(el);
+                const ref = $el.text().match(/Ref\s*(\d+)/i)?.[1] || $el.attr('data-id-product');
+                const nombre = $el.find('.product-title').text().trim();
+                const precio = $el.find('.price').text().trim();
+                if (ref && precio && precio !== "Ver web") {
+                    allProducts.push({
+                        ref, nombre, precio,
+                        imagen: $el.find('img').attr('data-src') || $el.find('img').attr('src'),
+                        enlace: $el.find('a').attr('href')
+                    });
+                }
+            });
         });
-
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(200).json({ success: true, total: allProducts.length, pages: 20, data: allProducts });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 }
